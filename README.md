@@ -8,7 +8,8 @@ Ele funciona como uma cópia versionada da configuração ativa em `%USERPROFILE
 
 ```text
 .
-├── CLAUDE.md
+├── AGENTS.md                 # Configuração consolidada do Codex
+├── CLAUDE.md                 # Índice e configuração do Claude Code
 └── rules/
     ├── ai-behavior-standards.md
     ├── code-standards.md
@@ -22,6 +23,8 @@ Ele funciona como uma cópia versionada da configuração ativa em `%USERPROFILE
 
 `CLAUDE.md` contém as orientações gerais e o índice das rules. Os arquivos em `rules/` são carregados automaticamente pelo Claude Code em todas as sessões.
 
+`AGENTS.md` contém a mesma configuração consolidada para o Codex. Ele reúne o conteúdo de `CLAUDE.md` e de todas as rules em um único arquivo, porque o Codex recebe suas instruções pelo formato `AGENTS.md`.
+
 | Arquivo | Finalidade |
 | --- | --- |
 | `ai-behavior-standards.md` | Como o agente pensa, decide, planeja e mantém mudanças cirúrgicas. |
@@ -32,6 +35,16 @@ Ele funciona como uma cópia versionada da configuração ativa em `%USERPROFILE
 | `narrative-style.md` | A assinatura de organização do código: orquestrador, etapas e leitura do fluxo. |
 | `performance-standards.md` | Consultas, recursos, transações, assincronismo e otimização. |
 | `test-standards.md` | Cobertura, isolamento, estrutura e estabilidade dos testes. |
+
+## Codex
+
+O arquivo global do Codex nesta máquina é `%USERPROFILE%\.codex\AGENTS.md`. Depois de alterar a configuração neste repositório, atualize-o com:
+
+```powershell
+Copy-Item -LiteralPath .\AGENTS.md -Destination "$env:USERPROFILE\.codex\AGENTS.md" -Force
+```
+
+Quando uma rule for alterada, regenere `AGENTS.md` a partir do `CLAUDE.md` e de `rules/` antes de publicar. O `AGENTS.md` versionado é a cópia consolidada que o Codex usa; `CLAUDE.md` e `rules/` continuam sendo a organização modular do Claude Code.
 
 ## Princípios da configuração
 

@@ -1,6 +1,6 @@
 # Configuração do Claude Code
 
-Este repositório guarda a configuração pessoal do Claude Code: as orientações globais e as rules que definem como o agente trabalha, escreve código e toma decisões.
+Este repositório guarda a minha configuração pessoal do Claude Code: as orientações globais e as rules que definem como o agente trabalha, escreve código e toma decisões.
 
 Ele funciona como uma cópia versionada da configuração ativa em `%USERPROFILE%\.claude`. Assim, as mudanças têm histórico no GitHub e podem ser recuperadas em outra máquina.
 

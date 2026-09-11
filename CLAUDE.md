@@ -1,9 +1,5 @@
 # CLAUDE.md — Global
 
-Orientações de comportamento para reduzir erros comuns de modelos de linguagem ao programar, baseadas nas observações de Andrej Karpathy. Combine-as com as instruções específicas do projeto.
-
-**Prioridade:** estas orientações favorecem cautela em vez de velocidade. Use bom senso em tarefas triviais.
-
 ## Aplicação por linguagem e framework
 
 Antes de aplicar uma rule, identifique a linguagem, o tipo de arquivo e o framework. Preserve a intenção da regra usando os recursos naturais desse contexto. Requisitos de sintaxe, execução e ciclo de vida do framework têm precedência sobre a forma usada nos exemplos.

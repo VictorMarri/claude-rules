@@ -1,6 +1,11 @@
+---
+paths:
+  - "**/*.{cs,ts,tsx,js,jsx,py}"
+---
+
 # Padrões de performance
 
-Correto e simples primeiro. As regras de queries, conexões e transações se aplicam ao código que acessa esses recursos. Exemplos em C# (EF Core, Dapper, HttpClient) não exigem essas APIs em outras linguagens ou em componentes de frontend.
+Correto e simples primeiro. As regras de queries, conexões e transações valem para o código que acessa esses recursos.
 
 ## N+1: batch ou join
 
@@ -26,7 +31,7 @@ Libere os recursos que a unidade de código cria e pelos quais é responsável, 
 
 Em C#, conexões, streams, `HttpResponseMessage` e outros `IDisposable` sob responsabilidade local entram em `using`/`await using`. Para `HttpClient`, siga o padrão de `IHttpClientFactory`; evite criar e descartar um cliente com seu próprio pool a cada chamada.
 
-Em outras linguagens, use o mecanismo de liberação correspondente. No frontend, timers, listeners, subscriptions e requisições que deixaram de ser necessárias seguem a limpeza ou o cancelamento do framework; isso não exige `IDisposable` nem uma factory de .NET.
+No frontend, timers, listeners, subscriptions e requisições que deixaram de ser necessárias seguem a limpeza ou o cancelamento do framework.
 
 ```csharp
 // Antes: conexão fica aberta se der exceção; HttpClient novo a cada chamada
@@ -81,7 +86,7 @@ await tx.CommitAsync(ct);
 
 Em C#, use `await` do controller até o banco. Evite `.Result`, `.Wait()` e `.GetAwaiter().GetResult()`, que bloqueiam a thread e podem causar travamentos. `async void` só em event handler. Encaminhe o `CancellationToken` da requisição às operações que suportam cancelamento.
 
-Em outras linguagens, use o modelo assíncrono e o cancelamento disponíveis nas APIs do projeto. No frontend, respeite os pontos em que o framework permite execução assíncrona e impeça resultados obsoletos de atualizar a interface. Funções síncronas, cálculos puros e componentes não precisam se tornar assíncronos apenas para cumprir a expressão "ponta a ponta".
+No frontend, impeça que resultados obsoletos atualizem a interface. Funções síncronas, cálculos puros e componentes não viram assíncronos por causa desta regra.
 
 ```csharp
 // Antes: bloqueia a thread, o token morre no controller, async void engole a exceção

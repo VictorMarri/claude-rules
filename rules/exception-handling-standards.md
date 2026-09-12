@@ -1,10 +1,15 @@
+---
+paths:
+  - "**/*.{cs,ts,tsx,js,jsx,py}"
+---
+
 # Padrões de tratamento de exceções
 
-Em C# e contextos que usam exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto (ver seção abaixo). Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo em vez de introduzir exceções para imitar C#. Os exemplos abaixo são em C#.
+Em contextos que usam exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto (ver seção abaixo). Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo.
 
 ## Catch só onde age
 
-Um catch existe para recuperar, traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Fora desses casos, a exceção propaga. Catch vazio, ou que só loga e segue, esconde a falha de todo mundo.
+Um catch existe para recuperar, traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Fora desses casos, a exceção propaga. Catch vazio, ou que só loga e segue, esconde a falha de todo mundo. Não trate erros de cenários impossíveis.
 
 ```csharp
 // Antes: loga e segue, como se nada tivesse acontecido
@@ -34,11 +39,11 @@ catch (TimeoutException) { await RetryAsync(); }
 
 ## Contrato de Try
 
-Quando a convenção do projeto usa `Try...` para operações falíveis, esse nome indica uma tentativa cujo resultado é informado no retorno. A função ou método trata apenas as falhas previstas no contrato; exceções inesperadas continuam propagando, preservando tipo, mensagem e stack trace. Deixe explícitas quais falhas são tratadas. Em outras convenções de retorno de erros, preserve os nomes e os contratos da linguagem ou do projeto.
+Quando a convenção do projeto usa `Try...` para operações falíveis, esse nome indica uma tentativa cujo resultado é informado no retorno. A função ou método trata apenas as falhas previstas no contrato; exceções inesperadas continuam propagando, preservando tipo, mensagem e stack trace. Deixe explícitas quais falhas são tratadas.
 
 ## Relançar preserva a original
 
-Em C#, use `throw;`, nunca `throw ex;`. Ao envolver com mais contexto, a original vai como inner exception. Em outras linguagens, use o mecanismo de relançamento ou encadeamento que preserve a falha original e sua informação de diagnóstico; a sintaxe de C# não é uma exigência fora de C#.
+Em C#, use `throw;`, nunca `throw ex;`. Ao envolver com mais contexto, a original vai como inner exception.
 
 ```csharp
 // Antes: reinicia o stack trace; a linha da falha some
@@ -54,8 +59,6 @@ catch (SqlException ex) { throw new PolicyPersistenceException(policy.Id, ex); }
 ## Handler centralizado na fronteira
 
 Uma última linha de defesa na fronteira externa (middleware HTTP, wrapper do consumer, runner do job) converte exceção não tratada em um log (ver `logging-standards.md`, Falha registrada uma vez) e uma resposta padrão com o correlation ID. As camadas internas não inventam tratamento próprio.
-
-Esses exemplos de fronteira são de backend. No frontend, use os pontos de tratamento de erro previstos pelo framework e pelo projeto para renderização, eventos e operações assíncronas, respeitando o alcance de cada mecanismo. Uma edição de componente não exige criar middleware, respostas HTTP ou uma nova infraestrutura de erros.
 
 ```csharp
 // Antes: cada controller com o próprio try/catch

@@ -2,111 +2,72 @@
 
 Esta é a versão do Codex da configuração pessoal mantida em `claude-rules`. As instruções abaixo são globais. Regras de projeto e do usuário têm precedência quando forem mais específicas.
 
-## Aplicação por linguagem e framework
+## Linguagem e framework
 
-Antes de aplicar uma rule, identifique a linguagem, o tipo de arquivo e o framework. Preserve a intenção da regra usando os recursos naturais desse contexto. Requisitos de sintaxe, execução e ciclo de vida do framework têm precedência sobre a forma usada nos exemplos.
+Os exemplos das rules estão em C#. Em outra linguagem, aplique o equivalente idiomático e respeite as regras do framework (ordem de hooks, ciclo de vida, composição declarativa). Limites de linhas valem para lógica executável; marcação JSX, template e CSS não contam.
 
-Exemplos em C# não exigem reproduzir classes, interfaces ou APIs de .NET em outras linguagens. Use funções, módulos, componentes e mecanismos de composição quando forem a forma adotada pelo projeto. Uma regra específica de C# ou de backend só vale onde esse contexto existe; sem equivalente aplicável, não crie uma estrutura apenas para satisfazer o exemplo.
+## Assinatura do Victor
 
-Em JSX, templates, HTML e CSS, preserve a composição declarativa. Limites de métodos e extrações narrativas se aplicam à lógica executável, não impõem dividir marcação ou estilos pelo número de linhas. Preferências de leitura, como evitar ternários, continuam valendo onde aplicáveis.
+Vale para todo código novo, em qualquer linguagem. O detalhe e os exemplos estão em `rules/`.
 
-## Estilo Narrativo
-
-Minha assinatura de organização do código está em `rules/narrative-style.md`, incluindo sua aplicação a código novo e existente.
+- Orquestrador narra as etapas; privados ou auxiliares executam, declarados na ordem em que são chamados. Extrair etapa com nome de especificação vale mesmo com um único uso.
+- Nome é frase de especificação: `IsCancellationDocument`, `RemoveReinsuranceIfExists`, `TryExecuteComputeCycle`.
+- Sem ternário. Decisão com `if`, cláusula de guarda e retorno antecipado.
+- Em lógica imperativa, 20 linhas de lógica executável são ponto de revisão e 30 o teto. 100 linhas por classe ou arquivo são ponto de revisão, não limite. Até 4 parâmetros.
+- Em C#, colaborador de serviço injetado entra por interface, mesmo com uma implementação só. No teste unitário isolado, todo colaborador é mock.
+- Todo código novo ou alterado nasce com teste automatizado, nos projetos que a configuração do repositório marca como cobertos. Cobertura mínima de 80%.
+- Mudança cirúrgica: só o que o pedido exige. Preserve o estilo do código existente. Código morto preexistente é mencionado, não apagado.
+- Catch só onde age. Log em fronteira. Falha registrada uma vez.
 
 ## Regras em `rules/`
 
-Carregadas automaticamente em toda sessão. Não usar `@` para apontar para elas, senão entram em dobro.
+No Codex, o conteúdo de todas as rules está consolidado neste arquivo, na ordem do índice abaixo. Ao planejar um projeto novo ou ao escrever em outra linguagem, consulte as seções relevantes antes de escrever.
 
-- `rules/ai-behavior-standards.md`: como eu trabalho (pensar antes, simplicidade, mudanças cirúrgicas, execução guiada por objetivo)
-- `rules/code-standards.md`: nomes, comentários, sintaxe e demais padrões de codificação
-- `rules/design-standards.md`: responsabilidade única, interfaces, abstração, pureza, convenção do projeto
+- `rules/ai-behavior-standards.md`: pensar antes, simplicidade, respeitar o escopo, execução guiada por objetivo
+- `rules/code-standards.md`: nomes, comentários, tamanhos, decisões explícitas, parâmetros, constantes, variáveis, dados sensíveis, mudanças cirúrgicas
+- `rules/design-standards.md`: responsabilidade única, interface para colaborador, abstração na terceira ocorrência, pureza, convenção do projeto
 - `rules/exception-handling-standards.md`: catch só onde age, tipo tratado, contrato de Try, rethrow, handler centralizado, resultado esperado segue o contrato do projeto
-- `rules/logging-standards.md`: logar em fronteira, log estruturado, correlation ID, níveis, identificador em vez de payload
-- `rules/narrative-style.md`: orquestrador, etapas auxiliares, ordem de leitura e aplicação da assinatura do Victor
+- `rules/logging-standards.md`: logar em fronteira, log estruturado, correlation ID, níveis, falha uma vez, identificador em vez de payload
+- `rules/narrative-style.md`: orquestrador, etapas auxiliares, ordem de leitura, código novo e existente, referência canônica
 - `rules/performance-standards.md`: N+1, dispose e HttpClient, paginação e projeção, transação curta, async ponta a ponta, medir antes de otimizar
-- `rules/test-standards.md`: padrões de testes
-
----
-
-**Estas orientações estão funcionando quando:** há menos alterações desnecessárias nas diferenças de código e menos reescritas por excesso de complexidade; dúvidas relevantes são esclarecidas antes da implementação; os logs permitem reconstruir o caminho da entrada até uma falha em produção; e os testes falham quando o comportamento protegido quebra, mantendo-se estáveis quando ele está correto.
-
-
-
----
+- `rules/test-standards.md`: cobertura, objetivo verificável, FIRST, onde mockar, AAA, um conceito por teste, nome, pirâmide, frontend
 
 # Padrões de comportamento da IA
 
-## Pensar antes de implementar
+## Pensar antes de executar
 
-**Informe suposições relevantes. Exponha vantagens e desvantagens. Pergunte quando a resposta mudar o resultado.**
-
-Antes de implementar:
-- Pergunte quando a dúvida afetar o comportamento esperado, o escopo ou uma ação difícil de desfazer. Explique a dúvida e as interpretações que levariam a resultados diferentes.
+- Pergunte quando a dúvida afetar o resultado esperado, o escopo ou uma ação difícil de desfazer. Explique a dúvida e as interpretações que levariam a resultados diferentes.
 - Para decisões pequenas e reversíveis, siga as convenções do projeto e continue. Informe as suposições relevantes.
-- Se existir uma abordagem mais simples, apresente-a. Questione a abordagem proposta quando houver motivo.
+- Se existir uma abordagem mais simples, apresente-a, com vantagens e desvantagens. Questione a abordagem proposta quando houver motivo.
 
 ## Simplicidade primeiro
 
-**O mínimo de código que resolve o problema. Nada especulativo.**
+O mínimo que resolve o problema. Nada especulativo.
 
-- Não acrescente funcionalidades além do que foi pedido.
-- Não crie abstrações para código de uso único; a extração de etapas narrativas segue a exceção em `narrative-style.md`.
-- Não acrescente flexibilidade ou configurabilidade que não foram pedidas.
-- Não trate erros de cenários impossíveis.
-- Se escrever 200 linhas e puder resolver com 50, reescreva.
+- Não acrescente funcionalidades, flexibilidade ou configurabilidade além do que foi pedido.
+- Pergunte a si mesmo: um engenheiro experiente diria que isto está complicado demais? Se sim, simplifique.
 
-Pergunte a si mesmo: "Um engenheiro experiente diria que isto está complicado demais?" Se sim, simplifique.
+## Respeitar o escopo
 
-## Mudanças cirúrgicas
+Altere apenas o necessário: cada mudança tem relação direta com o pedido. Não aproveite para melhorar o que está ao lado. Preserve o estilo existente, mesmo que você escrevesse de outra forma. Se notar algo fora do escopo, mencione; não mexa.
 
-**Altere apenas o necessário. Limpe o que suas próprias mudanças deixaram para trás.**
-
-Ao editar código existente:
-- Não aproveite para melhorar código, comentários ou formatação adjacentes.
-- Não refatore o que não está quebrado sem que isso faça parte do pedido.
-- Preserve o estilo existente, mesmo que você escrevesse de outra forma.
-- Se notar código morto sem relação com a tarefa, mencione-o; não o apague.
-
-Quando suas mudanças deixarem código sem uso:
-- Remova importações, variáveis e funções que SUAS mudanças tornaram desnecessárias.
-- Não remova código morto preexistente, salvo quando solicitado.
-
-Critério: cada linha alterada deve ter relação direta com o pedido do usuário.
+Limpe o que suas próprias mudanças deixaram sem uso. Não remova o que já estava sem uso antes, salvo quando solicitado.
 
 ## Execução guiada por objetivo
 
-**Defina critérios de sucesso. Continue até verificar o resultado.**
+Defina critérios de sucesso e continue até verificar o resultado, com a verificação adequada à tarefa: teste, comando, leitura do resultado ou revisão do texto. Com critério vago ("fazer funcionar"), use o contexto disponível e pergunte só quando a informação ausente mudar o resultado, o escopo ou envolver ação difícil de desfazer.
 
-Transforme tarefas em objetivos verificáveis:
-- "Adicionar validação" → "Escrever testes para entradas inválidas e fazê-los passar"
-- "Corrigir o bug" → "Escrever um teste que reproduza o problema e fazê-lo passar"
-- "Refatorar X" → "Garantir que os testes passem antes e depois"
-
-Para tarefas com várias etapas, apresente um plano breve:
-```
-1. [Etapa] → verificar: [checagem]
-2. [Etapa] → verificar: [checagem]
-3. [Etapa] → verificar: [checagem]
-```
-
-Critérios de sucesso claros permitem avançar com autonomia. Critérios vagos ("fazer funcionar") exigem esclarecimentos constantes.
-
-
-
----
+Para tarefas com várias etapas, apresente um plano breve, uma linha por etapa: `1. [Etapa] → verificar: [checagem]`. Se o plano envolve código, leia as rules técnicas relevantes antes de planejar, mesmo sem arquivo de código na pasta.
 
 # Padrões de codificação
 
-Valem para todo código novo, respeitando a linguagem, o tipo de arquivo e o framework. Exemplos em C# ilustram a intenção; a sintaxe e os mecanismos específicos de C# só se aplicam nesse contexto.
+Valem para todo código novo. Se escrever 200 linhas e puder resolver com 50, reescreva.
 
 ## Nomes como especificação
 
 O idioma destas rules não determina o idioma do código. Métodos, funções, classes, variáveis e demais identificadores seguem o idioma e o vocabulário usados no código do projeto. Se o código usa inglês, escreva os nomes em inglês; se usa português, siga esse padrão. Em projetos mistos, siga a convenção documentada ou a do módulo alterado. Preserve identificadores existentes, salvo quando a tarefa exigir renomeá-los; não os traduza por estas instruções estarem em português.
 
 Nomes são frases de especificação que dispensam comentários: `IsCancellationDocument`, `RemoveReinsuranceIfExists`, `ReducedOrderAmountIsEqualThanReinsurancePremium`. Condição e efeito vão no próprio nome (`...IfExists`, `Is...`, `...IsEqualThan...`).
-
-Esses nomes são exemplos em C#. Adapte capitalização, prefixos e sufixos à convenção local, como `snake_case` em Python ou nomes de hooks em React. Preserve nomes exigidos pelo framework.
 
 O nome carrega uma condição ou efeito, por um idioma consagrado (`Try...`, `...IfExists`, `Is...`, `...Async`). Ele expressa o contrato, não o mecanismo. Se precisar de oração subordinada ou gerúndio empilhado, encurte e deixe o detalhe para o corpo.
 
@@ -152,9 +113,9 @@ public class OrderService
 
 ## Tamanho de método e função
 
-Em lógica imperativa, até 30 linhas por método ou função. Passou disso, extraia etapas com nome de especificação usando métodos privados em C# ou funções auxiliares no formato da linguagem (ver `narrative-style.md`).
+Em lógica imperativa, 20 linhas de lógica executável são o ponto de revisão e 30 o teto. Acima do teto, extraia etapas com nome de especificação (ver `narrative-style.md`).
 
-Esse limite não se aplica ao tamanho total de componentes com JSX, templates ou estilos declarativos. Neles, avalie a composição e a responsabilidade, preservando as regras de escopo e ciclo de vida do framework ao extrair lógica.
+O limite conta lógica executável; marcação JSX, template e estilos não contam. Em componentes, avalie composição e responsabilidade.
 
 ```csharp
 // Antes: 60 linhas num corpo só
@@ -179,11 +140,11 @@ public async Task<Order> PlaceAsync(PlaceOrderCommand command)
 
 Use `if`, cláusulas de guarda e `else` quando necessário para expressar decisões, em vez de operadores condicionais ternários. Priorize a leitura explícita da condição e de seu resultado sobre a redução de linhas.
 
-Quando o contrato do projeto usa exceção para não encontrado, use uma guarda com `if` e `throw`. A escolha entre exceção e retorno segue `exception-handling-standards.md`, Resultado esperado segue o contrato do projeto.
+A guarda de não encontrado usa `if`, com `throw` ou retorno conforme o contrato do projeto.
 
-Em C#, mantenha corpo de expressão (`=>`) para métodos simples de uma linha. Em outras linguagens, use a forma de função adotada no projeto, sem converter funções para outra sintaxe apenas por esse exemplo.
+Em C#, mantenha corpo de expressão (`=>`) para métodos simples de uma linha.
 
-No frontend, mantenha a preferência por evitar ternários usando blocos condicionais do template, variáveis locais ou retornos claros onde forem válidos. Em React, mantenha hooks como `useState` e `useEffect` no nível superior do componente ou custom hook, antes de retornos condicionais; extraia lógica com hooks para custom hooks, não para funções auxiliares comuns. A preferência por guardas não autoriza alterar a ordem dessas chamadas.
+No JSX, troque o ternário por variável local, retorno antecipado ou bloco condicional do template.
 
 ## Aninhamento de condicionais
 
@@ -274,7 +235,7 @@ if (order.Status == PaidStatus) Ship(order);
 
 ## Declaração de variáveis
 
-Declare variáveis próximas do primeiro uso, respeitando escopo, inicialização e a ordem de chamadas exigida pelo framework. Em código imperativo sem essas restrições, declare na linha imediatamente antes do primeiro uso.
+Declare variáveis perto do primeiro uso; em código imperativo, na linha imediatamente antes.
 
 ```csharp
 // Antes: tudo declarado no topo
@@ -314,13 +275,17 @@ var client = new OpenAiClient("sk-live-4f8a9c2e...");
 var client = new OpenAiClient(configuration["OpenAi:ApiKey"]);
 ```
 
+## Mudanças cirúrgicas em código existente
 
+O princípio geral está em `ai-behavior-standards.md`, Respeitar o escopo. Em código:
 
----
+- Não refatore o que não está quebrado sem que isso faça parte do pedido.
+- Se notar código morto sem relação com a tarefa, mencione-o; não o apague.
+- Remova importações, variáveis e funções que suas mudanças tornaram desnecessárias.
 
 # Padrões de design
 
-Valem para todo código novo. Exemplos em C#. Em outra linguagem, aplique o equivalente idiomático.
+Valem para todo código novo.
 
 ## Uma responsabilidade por unidade
 
@@ -340,9 +305,9 @@ public class OrderRepository { ... }
 
 Em C#, todo colaborador de serviço injetado entra por interface, mesmo com uma implementação só: o teste unitário isolado mocka (ver `test-standards.md`, Onde mockar). Objetos de dados e valores não são colaboradores de serviço.
 
-Em outras linguagens, use os mecanismos de composição e substituição já adotados pelo projeto: funções recebidas por parâmetro, módulos, objetos ou interfaces quando fizerem sentido. A regra de C# não exige criar classes, interfaces ou contêineres de injeção para funções, componentes ou hooks.
+Fora de C#, use o mecanismo de substituição que o projeto já adota: função por parâmetro, módulo, objeto ou interface quando fizer sentido. Esta regra não exige criar classes, interfaces ou contêineres de injeção.
 
-Camada, configurabilidade e generalização só nascem na terceira ocorrência real; até lá, use a solução concreta. Componentes, hooks e módulos exigidos pela organização do framework não são, por si só, generalização especulativa.
+Camada, configurabilidade e generalização só nascem na terceira ocorrência real; até lá, use a solução concreta.
 
 ```csharp
 // Em C#: colaborador de serviço injetado entra por interface
@@ -357,7 +322,7 @@ public class CsvFileExporter { ... }
 
 ## Funções puras, entrada e saída explícitas
 
-Em cálculos e regras de negócio, explicite entradas e resultados e mantenha dependências externas controláveis. Estado de interface e efeitos seguem o mecanismo do framework; essa preferência por pureza não obriga transformar componentes ou hooks em classes nem eliminar o estado necessário à interface.
+Em cálculos e regras de negócio, explicite entradas e resultados e mantenha dependências externas controláveis.
 
 ```csharp
 // Antes: lê o relógio e um campo escondido
@@ -400,28 +365,13 @@ Para organizar o fluxo e decidir como aplicar o estilo a código novo ou existen
 
 As demais convenções seguem o repositório: nomes, pastas, framework de testes, injeção de dependências e tratamento de erros.
 
-```csharp
-// O repositório usa Result<T> para erro esperado
-public Result<Policy> Issue(IssuePolicyRequest request)
-
-// Antes: código novo introduz exceção para o mesmo caso
-throw new PolicyRejectedException(reason);
-
-// Depois: segue o padrão da casa
-return Result<Policy>.Failure(reason);
-```
-
-
-
----
-
 # Padrões de tratamento de exceções
 
-Em C# e contextos que usam exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto (ver seção abaixo). Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo em vez de introduzir exceções para imitar C#. Os exemplos abaixo são em C#.
+Em contextos que usam exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto (ver seção abaixo). Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo.
 
 ## Catch só onde age
 
-Um catch existe para recuperar, traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Fora desses casos, a exceção propaga. Catch vazio, ou que só loga e segue, esconde a falha de todo mundo.
+Um catch existe para recuperar, traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Fora desses casos, a exceção propaga. Catch vazio, ou que só loga e segue, esconde a falha de todo mundo. Não trate erros de cenários impossíveis.
 
 ```csharp
 // Antes: loga e segue, como se nada tivesse acontecido
@@ -451,11 +401,11 @@ catch (TimeoutException) { await RetryAsync(); }
 
 ## Contrato de Try
 
-Quando a convenção do projeto usa `Try...` para operações falíveis, esse nome indica uma tentativa cujo resultado é informado no retorno. A função ou método trata apenas as falhas previstas no contrato; exceções inesperadas continuam propagando, preservando tipo, mensagem e stack trace. Deixe explícitas quais falhas são tratadas. Em outras convenções de retorno de erros, preserve os nomes e os contratos da linguagem ou do projeto.
+Quando a convenção do projeto usa `Try...` para operações falíveis, esse nome indica uma tentativa cujo resultado é informado no retorno. A função ou método trata apenas as falhas previstas no contrato; exceções inesperadas continuam propagando, preservando tipo, mensagem e stack trace. Deixe explícitas quais falhas são tratadas.
 
 ## Relançar preserva a original
 
-Em C#, use `throw;`, nunca `throw ex;`. Ao envolver com mais contexto, a original vai como inner exception. Em outras linguagens, use o mecanismo de relançamento ou encadeamento que preserve a falha original e sua informação de diagnóstico; a sintaxe de C# não é uma exigência fora de C#.
+Em C#, use `throw;`, nunca `throw ex;`. Ao envolver com mais contexto, a original vai como inner exception.
 
 ```csharp
 // Antes: reinicia o stack trace; a linha da falha some
@@ -471,8 +421,6 @@ catch (SqlException ex) { throw new PolicyPersistenceException(policy.Id, ex); }
 ## Handler centralizado na fronteira
 
 Uma última linha de defesa na fronteira externa (middleware HTTP, wrapper do consumer, runner do job) converte exceção não tratada em um log (ver `logging-standards.md`, Falha registrada uma vez) e uma resposta padrão com o correlation ID. As camadas internas não inventam tratamento próprio.
-
-Esses exemplos de fronteira são de backend. No frontend, use os pontos de tratamento de erro previstos pelo framework e pelo projeto para renderização, eventos e operações assíncronas, respeitando o alcance de cada mecanismo. Uma edição de componente não exige criar middleware, respostas HTTP ou uma nova infraestrutura de erros.
 
 ```csharp
 // Antes: cada controller com o próprio try/catch
@@ -508,13 +456,9 @@ if (coverage > limit) throw new CoverageExceededException();
 if (coverage > limit) return Result<Policy>.Failure("Coverage exceeds limit");
 ```
 
-
-
----
-
 # Padrões de logging
 
-Valem para os pontos que precisam de observabilidade no backend e no frontend. Exemplos em C# com `ILogger` não exigem essa API em outras linguagens. Use o logger ou a telemetria já adotados no projeto; uma alteração de interface não exige criar uma infraestrutura de logging.
+Use o logger ou a telemetria já adotados no projeto.
 
 ## Logar em fronteira
 
@@ -534,7 +478,7 @@ _logger.LogInformation("Order {OrderId} completed in {ElapsedMs}ms", order.Id, e
 
 ## Log estruturado
 
-Use campos estruturados para permitir consultas na plataforma. Em C# com `ILogger`, use template com propriedades nomeadas em vez de string montada. Em outras bibliotecas, use a API de campos ou objetos estruturados correspondente, sem copiar a sintaxe de placeholders de C#.
+Use campos estruturados para permitir consultas na plataforma. Em C# com `ILogger`, use template com propriedades nomeadas em vez de string montada.
 
 ```csharp
 // Antes: vira texto, não dá para filtrar por OrderId
@@ -547,8 +491,6 @@ _logger.LogInformation("Order {OrderId} placed by {CustomerId}", order.Id, custo
 ## Correlation ID por escopo
 
 No backend, um ID de correlação acompanha o fluxo: HTTP, fila, job. Ele entra na fronteira e acompanha os logs pelo mecanismo do projeto (`Activity`/OpenTelemetry, middleware, header). Em C# com `ILogger`, sem outro mecanismo, use `BeginScope` na entrada. Ao publicar mensagem ou chamar outro serviço, propague o contexto conforme o protocolo adotado.
-
-No frontend, use a correlação suportada pelo cliente de API e pela telemetria existentes. A herança de escopo de `ILogger` não é uma garantia nem uma exigência em outras bibliotecas.
 
 ```csharp
 // Antes: repetido em cada chamada
@@ -602,13 +544,9 @@ _logger.LogInformation("Customer created: {@Customer}", customer);
 _logger.LogInformation("Customer {CustomerId} created", customer.Id);
 ```
 
-
-
----
-
 # Estilo Narrativo — assinatura do Victor
 
-Funções ou métodos que coordenam várias etapas contam a história; as funções auxiliares ou os métodos privados são os capítulos. Em C#, use métodos privados; em outras linguagens, preserve a organização natural por funções, módulos ou componentes.
+Funções ou métodos que coordenam várias etapas contam a história; as funções auxiliares ou os métodos privados são os capítulos.
 
 ## Orquestrador como sumário
 
@@ -618,40 +556,32 @@ Funções ou métodos que fazem uma operação simples e clara podem manter a l�
 
 ## Auxiliares e privados como etapas
 
-Cada função auxiliar ou método privado representa uma etapa significativa e mantém um nível de abstração. Use aproximadamente 20 linhas de lógica executável como referência de revisão. Extraia quando houver uma etapa que possa ser nomeada e entendida separadamente, mesmo que seja usada uma única vez. Preserve funções e métodos coesos quando a divisão apenas espalhar a lógica.
+Cada função auxiliar ou método privado representa uma etapa significativa e mantém um nível de abstração. O tamanho segue o limite de `code-standards.md`. Extraia quando houver uma etapa que possa ser nomeada e entendida separadamente, mesmo que seja usada uma única vez. Preserve funções e métodos coesos quando a divisão apenas espalhar a lógica.
 
 Declare os privados e auxiliares na ordem em que são chamados, quando as regras de escopo e inicialização da linguagem permitirem: manchete em cima, detalhe descendo o arquivo.
 
 ## Composição declarativa no frontend
 
-Em componentes, JSX e templates, a história é a estrutura legível da interface. Preserve a composição do framework. Use a organização narrativa nos fluxos imperativos, como ações de usuário e funções de negócio; a renderização pode manter sua marcação diretamente no componente. Extraia componentes ou hooks por responsabilidade, conforme o padrão do projeto, sem transformar cada componente em uma sequência de chamadas a auxiliares.
-
-## Precedência sobre Simplicidade primeiro
-
-Extrair uma função auxiliar ou método privado para legibilidade narrativa é permitido mesmo com um único uso. A proibição de abstrações para código de uso único em `ai-behavior-standards.md` não se aplica a essa extração. Camadas, configurabilidade e generalização sem uso real continuam fora do padrão; interfaces de colaboradores seguem `design-standards.md`.
+Em componentes, a organização narrativa vale para os fluxos imperativos, como ações de usuário e funções de negócio. A renderização pode manter a marcação no componente; extraia componentes ou hooks por responsabilidade, conforme o padrão do projeto, sem transformar a renderização em uma sequência de chamadas a auxiliares. Lógica com hooks vai para custom hooks, não para funções auxiliares comuns.
 
 ## Código novo e código existente
 
-Código novo segue este estilo na forma compatível com a linguagem e o framework, mesmo quando o código ao redor usa outra organização. Ao corrigir ou alterar uma função, método ou componente existente, preserve o estilo dele; converta para o narrativo quando o pedido incluir essa refatoração. Essa é a fronteira com Mudanças cirúrgicas em `ai-behavior-standards.md`. As demais convenções seguem `design-standards.md`.
+Código novo segue este estilo, mesmo quando o código ao redor usa outra organização. Ao corrigir ou alterar uma função, método ou componente existente, preserve o estilo dele; converta para o narrativo quando o pedido incluir essa refatoração. Essa é a fronteira com Respeitar o escopo em `ai-behavior-standards.md` e Mudanças cirúrgicas em `code-standards.md`. As demais convenções seguem `design-standards.md`.
 
 ## Referência canônica
 
-`CalculateReinsuranceUseCase`, no repo `Pottencial.Financial.Taxes`, em `Pottencial.Financial.Taxes.UseCases/Reinsurance/`. Na dúvida sobre como o estilo se aplica em C#, leia essa classe antes de escrever. Em outras linguagens, use-a como referência de leitura do fluxo, sem copiar sua estrutura de classes.
+`CalculateReinsuranceUseCase`, no repo `Pottencial.Financial.Taxes`, em `Pottencial.Financial.Taxes.UseCases/Reinsurance/`. Na dúvida sobre como o estilo se aplica em C#, leia essa classe antes de escrever. Em outras linguagens, use-a só como referência de leitura do fluxo, sem copiar sua estrutura de classes.
 
 ## Critérios de leitura
 
 - Em funções ou métodos que coordenam várias etapas, o fluxo de negócio se narra lendo só o orquestrador.
 - Cada auxiliar ou privado se entende sozinho, sem ler os outros.
 - Em operações simples, nome e corpo bastam para entender o comportamento, sem exigir extração.
-- Na interface declarativa, a composição deixa clara a estrutura da tela e respeita o framework.
-
-
-
----
+- Na interface declarativa, a composição deixa clara a estrutura da tela.
 
 # Padrões de performance
 
-Correto e simples primeiro. As regras de queries, conexões e transações se aplicam ao código que acessa esses recursos. Exemplos em C# (EF Core, Dapper, HttpClient) não exigem essas APIs em outras linguagens ou em componentes de frontend.
+Correto e simples primeiro. As regras de queries, conexões e transações valem para o código que acessa esses recursos.
 
 ## N+1: batch ou join
 
@@ -677,7 +607,7 @@ Libere os recursos que a unidade de código cria e pelos quais é responsável, 
 
 Em C#, conexões, streams, `HttpResponseMessage` e outros `IDisposable` sob responsabilidade local entram em `using`/`await using`. Para `HttpClient`, siga o padrão de `IHttpClientFactory`; evite criar e descartar um cliente com seu próprio pool a cada chamada.
 
-Em outras linguagens, use o mecanismo de liberação correspondente. No frontend, timers, listeners, subscriptions e requisições que deixaram de ser necessárias seguem a limpeza ou o cancelamento do framework; isso não exige `IDisposable` nem uma factory de .NET.
+No frontend, timers, listeners, subscriptions e requisições que deixaram de ser necessárias seguem a limpeza ou o cancelamento do framework.
 
 ```csharp
 // Antes: conexão fica aberta se der exceção; HttpClient novo a cada chamada
@@ -732,7 +662,7 @@ await tx.CommitAsync(ct);
 
 Em C#, use `await` do controller até o banco. Evite `.Result`, `.Wait()` e `.GetAwaiter().GetResult()`, que bloqueiam a thread e podem causar travamentos. `async void` só em event handler. Encaminhe o `CancellationToken` da requisição às operações que suportam cancelamento.
 
-Em outras linguagens, use o modelo assíncrono e o cancelamento disponíveis nas APIs do projeto. No frontend, respeite os pontos em que o framework permite execução assíncrona e impeça resultados obsoletos de atualizar a interface. Funções síncronas, cálculos puros e componentes não precisam se tornar assíncronos apenas para cumprir a expressão "ponta a ponta".
+No frontend, impeça que resultados obsoletos atualizem a interface. Funções síncronas, cálculos puros e componentes não viram assíncronos por causa desta regra.
 
 ```csharp
 // Antes: bloqueia a thread, o token morre no controller, async void engole a exceção
@@ -764,13 +694,9 @@ private static readonly ConcurrentDictionary<Guid, Policy> _cache = new();
 var policy = await _repository.GetAsync(id, ct);
 ```
 
-
-
----
-
 # Padrões de testes
 
-Valem para backend e frontend. Exemplos em C# (xUnit + Moq) e TypeScript (Vitest). Em outra linguagem ou framework, aplique o equivalente idiomático.
+Exemplos em C# (xUnit + Moq) e TypeScript (Vitest).
 
 ## Cobertura obrigatória
 
@@ -782,6 +708,8 @@ Cadastro de categoria de produto         → caminho feliz e validações princi
 ```
 
 Cobertura é o piso, não o objetivo: teste que passa com o comportamento quebrado não conta (ver Autovalidação).
+
+Objetivo verificável por tipo de tarefa: validação nova, testes para entradas inválidas passando; correção de bug, um teste que reproduz o problema e passa depois da correção; refatoração, os testes passam antes e depois.
 
 ## Princípios FIRST, sem a exigência de escrever o teste primeiro
 
@@ -856,7 +784,7 @@ Esta exigência de mocks vale apenas para testes unitários isolados. Testes de 
 
 Nos testes unitários isolados de C#, os colaboradores de serviço da classe testada entram por interface e são mockados. Cada colaborador tem o próprio teste. Entidades, DTOs, objetos de valor e dados de entrada podem ser concretos.
 
-Nos testes unitários isolados de outras linguagens, substitua os colaboradores pelo mecanismo já usado no projeto, como mocks de funções, módulos ou objetos. O isolamento não exige criar classes ou interfaces de C#.
+Fora de C#, substitua os colaboradores pelo mecanismo de mock que o projeto já usa.
 
 ```csharp
 // Antes: colaborador concreto dentro do teste do caso de uso
@@ -934,7 +862,7 @@ Repositório só tem testes de unidade                     → código novo ganh
 
 ## Frontend
 
-Teste o comportamento visível ao usuário com as ferramentas e a estrutura já adotadas no repositório. Renderize o componente no ambiente de teste do framework e controle dependências externas conforme o cenário. A regra de mocks de colaboradores em C# não obriga substituir cada componente filho, hook ou recurso do framework. Testes de integração e end-to-end continuam sujeitos à seção Pirâmide.
+Teste o comportamento visível ao usuário com as ferramentas já adotadas no repositório. A regra de mocks não obriga a substituir componentes filhos, hooks ou recursos do framework. Testes de integração e end-to-end seguem a seção Pirâmide.
 
 ```typescript
 // Antes: testa estado interno
@@ -948,5 +876,3 @@ expect(screen.getByText('Pedido confirmado')).toBeVisible();
 ## Testes com falhas intermitentes
 
 Investigue e corrija testes com falhas intermitentes. Remova um teste apenas quando ele não proteger mais um comportamento necessário ou quando essa proteção já estiver coberta por outro teste confiável.
-
-

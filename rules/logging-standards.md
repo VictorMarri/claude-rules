@@ -1,6 +1,11 @@
+---
+paths:
+  - "**/*.{cs,ts,tsx,js,jsx,py}"
+---
+
 # Padrões de logging
 
-Valem para os pontos que precisam de observabilidade no backend e no frontend. Exemplos em C# com `ILogger` não exigem essa API em outras linguagens. Use o logger ou a telemetria já adotados no projeto; uma alteração de interface não exige criar uma infraestrutura de logging.
+Use o logger ou a telemetria já adotados no projeto.
 
 ## Logar em fronteira
 
@@ -20,7 +25,7 @@ _logger.LogInformation("Order {OrderId} completed in {ElapsedMs}ms", order.Id, e
 
 ## Log estruturado
 
-Use campos estruturados para permitir consultas na plataforma. Em C# com `ILogger`, use template com propriedades nomeadas em vez de string montada. Em outras bibliotecas, use a API de campos ou objetos estruturados correspondente, sem copiar a sintaxe de placeholders de C#.
+Use campos estruturados para permitir consultas na plataforma. Em C# com `ILogger`, use template com propriedades nomeadas em vez de string montada.
 
 ```csharp
 // Antes: vira texto, não dá para filtrar por OrderId
@@ -33,8 +38,6 @@ _logger.LogInformation("Order {OrderId} placed by {CustomerId}", order.Id, custo
 ## Correlation ID por escopo
 
 No backend, um ID de correlação acompanha o fluxo: HTTP, fila, job. Ele entra na fronteira e acompanha os logs pelo mecanismo do projeto (`Activity`/OpenTelemetry, middleware, header). Em C# com `ILogger`, sem outro mecanismo, use `BeginScope` na entrada. Ao publicar mensagem ou chamar outro serviço, propague o contexto conforme o protocolo adotado.
-
-No frontend, use a correlação suportada pelo cliente de API e pela telemetria existentes. A herança de escopo de `ILogger` não é uma garantia nem uma exigência em outras bibliotecas.
 
 ```csharp
 // Antes: repetido em cada chamada

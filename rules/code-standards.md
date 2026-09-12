@@ -1,14 +1,17 @@
+---
+paths:
+  - "**/*.{cs,ts,tsx,js,jsx,py}"
+---
+
 # Padrões de codificação
 
-Valem para todo código novo, respeitando a linguagem, o tipo de arquivo e o framework. Exemplos em C# ilustram a intenção; a sintaxe e os mecanismos específicos de C# só se aplicam nesse contexto.
+Valem para todo código novo. Se escrever 200 linhas e puder resolver com 50, reescreva.
 
 ## Nomes como especificação
 
 O idioma destas rules não determina o idioma do código. Métodos, funções, classes, variáveis e demais identificadores seguem o idioma e o vocabulário usados no código do projeto. Se o código usa inglês, escreva os nomes em inglês; se usa português, siga esse padrão. Em projetos mistos, siga a convenção documentada ou a do módulo alterado. Preserve identificadores existentes, salvo quando a tarefa exigir renomeá-los; não os traduza por estas instruções estarem em português.
 
 Nomes são frases de especificação que dispensam comentários: `IsCancellationDocument`, `RemoveReinsuranceIfExists`, `ReducedOrderAmountIsEqualThanReinsurancePremium`. Condição e efeito vão no próprio nome (`...IfExists`, `Is...`, `...IsEqualThan...`).
-
-Esses nomes são exemplos em C#. Adapte capitalização, prefixos e sufixos à convenção local, como `snake_case` em Python ou nomes de hooks em React. Preserve nomes exigidos pelo framework.
 
 O nome carrega uma condição ou efeito, por um idioma consagrado (`Try...`, `...IfExists`, `Is...`, `...Async`). Ele expressa o contrato, não o mecanismo. Se precisar de oração subordinada ou gerúndio empilhado, encurte e deixe o detalhe para o corpo.
 
@@ -54,9 +57,9 @@ public class OrderService
 
 ## Tamanho de método e função
 
-Em lógica imperativa, até 30 linhas por método ou função. Passou disso, extraia etapas com nome de especificação usando métodos privados em C# ou funções auxiliares no formato da linguagem (ver `narrative-style.md`).
+Em lógica imperativa, 20 linhas de lógica executável são o ponto de revisão e 30 o teto. Acima do teto, extraia etapas com nome de especificação (ver `narrative-style.md`).
 
-Esse limite não se aplica ao tamanho total de componentes com JSX, templates ou estilos declarativos. Neles, avalie a composição e a responsabilidade, preservando as regras de escopo e ciclo de vida do framework ao extrair lógica.
+O limite conta lógica executável; marcação JSX, template e estilos não contam. Em componentes, avalie composição e responsabilidade.
 
 ```csharp
 // Antes: 60 linhas num corpo só
@@ -81,11 +84,11 @@ public async Task<Order> PlaceAsync(PlaceOrderCommand command)
 
 Use `if`, cláusulas de guarda e `else` quando necessário para expressar decisões, em vez de operadores condicionais ternários. Priorize a leitura explícita da condição e de seu resultado sobre a redução de linhas.
 
-Quando o contrato do projeto usa exceção para não encontrado, use uma guarda com `if` e `throw`. A escolha entre exceção e retorno segue `exception-handling-standards.md`, Resultado esperado segue o contrato do projeto.
+A guarda de não encontrado usa `if`, com `throw` ou retorno conforme o contrato do projeto.
 
-Em C#, mantenha corpo de expressão (`=>`) para métodos simples de uma linha. Em outras linguagens, use a forma de função adotada no projeto, sem converter funções para outra sintaxe apenas por esse exemplo.
+Em C#, mantenha corpo de expressão (`=>`) para métodos simples de uma linha.
 
-No frontend, mantenha a preferência por evitar ternários usando blocos condicionais do template, variáveis locais ou retornos claros onde forem válidos. Em React, mantenha hooks como `useState` e `useEffect` no nível superior do componente ou custom hook, antes de retornos condicionais; extraia lógica com hooks para custom hooks, não para funções auxiliares comuns. A preferência por guardas não autoriza alterar a ordem dessas chamadas.
+No JSX, troque o ternário por variável local, retorno antecipado ou bloco condicional do template.
 
 ## Aninhamento de condicionais
 
@@ -176,7 +179,7 @@ if (order.Status == PaidStatus) Ship(order);
 
 ## Declaração de variáveis
 
-Declare variáveis próximas do primeiro uso, respeitando escopo, inicialização e a ordem de chamadas exigida pelo framework. Em código imperativo sem essas restrições, declare na linha imediatamente antes do primeiro uso.
+Declare variáveis perto do primeiro uso; em código imperativo, na linha imediatamente antes.
 
 ```csharp
 // Antes: tudo declarado no topo
@@ -215,3 +218,11 @@ var client = new OpenAiClient("sk-live-4f8a9c2e...");
 // Depois
 var client = new OpenAiClient(configuration["OpenAi:ApiKey"]);
 ```
+
+## Mudanças cirúrgicas em código existente
+
+O princípio geral está em `ai-behavior-standards.md`, Respeitar o escopo. Em código:
+
+- Não refatore o que não está quebrado sem que isso faça parte do pedido.
+- Se notar código morto sem relação com a tarefa, mencione-o; não o apague.
+- Remova importações, variáveis e funções que suas mudanças tornaram desnecessárias.

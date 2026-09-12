@@ -1,6 +1,11 @@
+---
+paths:
+  - "**/*.{cs,ts,tsx,js,jsx,py}"
+---
+
 # Padrões de design
 
-Valem para todo código novo. Exemplos em C#. Em outra linguagem, aplique o equivalente idiomático.
+Valem para todo código novo.
 
 ## Uma responsabilidade por unidade
 
@@ -20,9 +25,9 @@ public class OrderRepository { ... }
 
 Em C#, todo colaborador de serviço injetado entra por interface, mesmo com uma implementação só: o teste unitário isolado mocka (ver `test-standards.md`, Onde mockar). Objetos de dados e valores não são colaboradores de serviço.
 
-Em outras linguagens, use os mecanismos de composição e substituição já adotados pelo projeto: funções recebidas por parâmetro, módulos, objetos ou interfaces quando fizerem sentido. A regra de C# não exige criar classes, interfaces ou contêineres de injeção para funções, componentes ou hooks.
+Fora de C#, use o mecanismo de substituição que o projeto já adota: função por parâmetro, módulo, objeto ou interface quando fizer sentido. Esta regra não exige criar classes, interfaces ou contêineres de injeção.
 
-Camada, configurabilidade e generalização só nascem na terceira ocorrência real; até lá, use a solução concreta. Componentes, hooks e módulos exigidos pela organização do framework não são, por si só, generalização especulativa.
+Camada, configurabilidade e generalização só nascem na terceira ocorrência real; até lá, use a solução concreta.
 
 ```csharp
 // Em C#: colaborador de serviço injetado entra por interface
@@ -37,7 +42,7 @@ public class CsvFileExporter { ... }
 
 ## Funções puras, entrada e saída explícitas
 
-Em cálculos e regras de negócio, explicite entradas e resultados e mantenha dependências externas controláveis. Estado de interface e efeitos seguem o mecanismo do framework; essa preferência por pureza não obriga transformar componentes ou hooks em classes nem eliminar o estado necessário à interface.
+Em cálculos e regras de negócio, explicite entradas e resultados e mantenha dependências externas controláveis.
 
 ```csharp
 // Antes: lê o relógio e um campo escondido
@@ -79,14 +84,3 @@ public class ShippingFeeCalculator(IShippingRateProvider rates)
 Para organizar o fluxo e decidir como aplicar o estilo a código novo ou existente, siga `narrative-style.md`, Código novo e código existente.
 
 As demais convenções seguem o repositório: nomes, pastas, framework de testes, injeção de dependências e tratamento de erros.
-
-```csharp
-// O repositório usa Result<T> para erro esperado
-public Result<Policy> Issue(IssuePolicyRequest request)
-
-// Antes: código novo introduz exceção para o mesmo caso
-throw new PolicyRejectedException(reason);
-
-// Depois: segue o padrão da casa
-return Result<Policy>.Failure(reason);
-```

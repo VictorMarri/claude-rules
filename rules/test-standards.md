@@ -1,6 +1,11 @@
+---
+paths:
+  - "**/*.{cs,ts,tsx,js,jsx,py}"
+---
+
 # Padrões de testes
 
-Valem para backend e frontend. Exemplos em C# (xUnit + Moq) e TypeScript (Vitest). Em outra linguagem ou framework, aplique o equivalente idiomático.
+Exemplos em C# (xUnit + Moq) e TypeScript (Vitest).
 
 ## Cobertura obrigatória
 
@@ -12,6 +17,8 @@ Cadastro de categoria de produto         → caminho feliz e validações princi
 ```
 
 Cobertura é o piso, não o objetivo: teste que passa com o comportamento quebrado não conta (ver Autovalidação).
+
+Objetivo verificável por tipo de tarefa: validação nova, testes para entradas inválidas passando; correção de bug, um teste que reproduz o problema e passa depois da correção; refatoração, os testes passam antes e depois.
 
 ## Princípios FIRST, sem a exigência de escrever o teste primeiro
 
@@ -86,7 +93,7 @@ Esta exigência de mocks vale apenas para testes unitários isolados. Testes de 
 
 Nos testes unitários isolados de C#, os colaboradores de serviço da classe testada entram por interface e são mockados. Cada colaborador tem o próprio teste. Entidades, DTOs, objetos de valor e dados de entrada podem ser concretos.
 
-Nos testes unitários isolados de outras linguagens, substitua os colaboradores pelo mecanismo já usado no projeto, como mocks de funções, módulos ou objetos. O isolamento não exige criar classes ou interfaces de C#.
+Fora de C#, substitua os colaboradores pelo mecanismo de mock que o projeto já usa.
 
 ```csharp
 // Antes: colaborador concreto dentro do teste do caso de uso
@@ -164,7 +171,7 @@ Repositório só tem testes de unidade                     → código novo ganh
 
 ## Frontend
 
-Teste o comportamento visível ao usuário com as ferramentas e a estrutura já adotadas no repositório. Renderize o componente no ambiente de teste do framework e controle dependências externas conforme o cenário. A regra de mocks de colaboradores em C# não obriga substituir cada componente filho, hook ou recurso do framework. Testes de integração e end-to-end continuam sujeitos à seção Pirâmide.
+Teste o comportamento visível ao usuário com as ferramentas já adotadas no repositório. A regra de mocks não obriga a substituir componentes filhos, hooks ou recursos do framework. Testes de integração e end-to-end seguem a seção Pirâmide.
 
 ```typescript
 // Antes: testa estado interno

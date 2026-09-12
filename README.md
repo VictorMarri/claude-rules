@@ -10,6 +10,7 @@ Ele funciona como uma cópia versionada da configuração ativa em `%USERPROFILE
 .
 ├── AGENTS.md                 # Versão consolidada para o Codex, gerada a partir de CLAUDE.md e rules/
 ├── CLAUDE.md                 # Carrega sempre: linguagem e framework, resumo da assinatura, índice das rules
+├── gera-agents.js            # Gera AGENTS.md a partir de CLAUDE.md e rules/
 └── rules/
     ├── ai-behavior-standards.md         # Carrega sempre
     ├── code-standards.md                # Carrega ao ler código
@@ -55,7 +56,15 @@ Para conferir o que carregou numa sessão, rode `/context` e veja a lista em Mem
 
 `AGENTS.md` é a mesma configuração em um único arquivo, porque o Codex recebe suas instruções nesse formato. Ele é gerado a partir de `CLAUDE.md` e de `rules/`: sem o cabeçalho `paths:`, sem o comentário de manutenção e com o parágrafo de carregamento adaptado, já que o Codex lê tudo de uma vez.
 
-O arquivo global do Codex nesta máquina é `%USERPROFILE%\.codex\AGENTS.md`. Depois de alterar a configuração neste repositório, regenere `AGENTS.md` e copie:
+Para regenerar, rode na raiz do repositório (precisa do Node.js):
+
+```powershell
+node .\gera-agents.js
+```
+
+O script lê `CLAUDE.md` e `rules/` e sobrescreve `AGENTS.md`. Confira com `git diff AGENTS.md` antes de publicar.
+
+O arquivo global do Codex nesta máquina é `%USERPROFILE%\.codex\AGENTS.md`. Depois de regenerar, copie:
 
 ```powershell
 Copy-Item -LiteralPath .\AGENTS.md -Destination "$env:USERPROFILE\.codex\AGENTS.md" -Force
@@ -98,7 +107,7 @@ Depois de revisar a mudança, registre-a no histórico:
 ```powershell
 git status
 git diff
-git add CLAUDE.md rules AGENTS.md README.md
+git add CLAUDE.md rules AGENTS.md gera-agents.js README.md
 git commit -m "docs: atualiza regras do Claude"
 git push
 ```

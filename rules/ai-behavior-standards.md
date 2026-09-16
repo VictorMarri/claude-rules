@@ -23,4 +23,6 @@ Limpe o que suas próprias mudanças deixaram sem uso. Não remova o que já est
 
 Defina critérios de sucesso e continue até verificar o resultado, com a verificação adequada à tarefa: teste, comando, leitura do resultado ou revisão do texto. Com critério vago ("fazer funcionar"), use o contexto disponível e pergunte só quando a informação ausente mudar o resultado, o escopo ou envolver ação difícil de desfazer.
 
+Rode os testes e comandos de verificação do projeto e corrija as falhas causadas pela sua mudança sem parar para pedir aprovação a cada etapa.
+
 Para tarefas com várias etapas, apresente um plano breve, uma linha por etapa: `1. [Etapa] → verificar: [checagem]`. Se o plano envolve código, leia as rules técnicas relevantes antes de planejar, mesmo sem arquivo de código na pasta.

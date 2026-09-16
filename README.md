@@ -96,6 +96,7 @@ A revisão partiu do artigo da OpenAI "Rethinking skills and prompts for GPT-6 A
 1. `paths:` nas sete rules técnicas, resumo da assinatura no `CLAUDE.md`, avisos repetidos de "adapte C# ao framework" reduzidos a uma frase e duplicações resolvidas. No teste A/B, o contexto inicial caiu de 42 mil para 26 mil tokens, com a mesma qualidade de código.
 2. `ai-behavior-standards.md` só com orientações gerais. O que era exclusivo de código foi para as rules técnicas.
 3. Seis rules técnicas enxutas: saíram os exemplos que só repetiam a regra; obrigações, condições e exceções ficaram. `AGENTS.md` caiu de 39,5 KB para 22 KB e passou a caber nos 32 KiB do Codex. No teste A/B (Claude e Codex, mesmo prompt, testes independentes e mutação), funcionalidade e decisões ficaram iguais; a única regressão, strings de status e erro deixadas inline, foi corrigida com um exemplo de uma linha na regra de constantes.
+4. Permissão explícita em `ai-behavior-standards.md` para rodar as verificações do projeto e corrigir falhas da própria mudança sem pedir aprovação a cada etapa. O artigo recomenda permissões positivas para fluxos seguros, porque o GPT-6 Astra tende a parar cedo demais.
 
 Nenhuma regra foi removida com a justificativa de que "o modelo já sabe".
 

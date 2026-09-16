@@ -61,72 +61,29 @@ Para tarefas com várias etapas, apresente um plano breve, uma linha por etapa: 
 
 # Padrões de codificação
 
-Valem para todo código novo. Se escrever 200 linhas e puder resolver com 50, reescreva.
+Valem para todo código novo. Use a solução mais simples que resolve o pedido; se puder resolver com menos código sem perder clareza, simplifique.
 
 ## Nomes como especificação
 
-O idioma destas rules não determina o idioma do código. Métodos, funções, classes, variáveis e demais identificadores seguem o idioma e o vocabulário usados no código do projeto. Se o código usa inglês, escreva os nomes em inglês; se usa português, siga esse padrão. Em projetos mistos, siga a convenção documentada ou a do módulo alterado. Preserve identificadores existentes, salvo quando a tarefa exigir renomeá-los; não os traduza por estas instruções estarem em português.
+Identificadores seguem o idioma e o vocabulário do projeto; em projetos mistos, siga a convenção documentada ou a do módulo. Preserve nomes existentes, salvo quando a tarefa exigir renomeá-los. O idioma destas rules não determina o idioma do código.
 
-Nomes são frases de especificação que dispensam comentários: `IsCancellationDocument`, `RemoveReinsuranceIfExists`, `ReducedOrderAmountIsEqualThanReinsurancePremium`. Condição e efeito vão no próprio nome (`...IfExists`, `Is...`, `...IsEqualThan...`).
-
-O nome carrega uma condição ou efeito, por um idioma consagrado (`Try...`, `...IfExists`, `Is...`, `...Async`). Ele expressa o contrato, não o mecanismo. Se precisar de oração subordinada ou gerúndio empilhado, encurte e deixe o detalhe para o corpo.
-
-Exemplo: `ExecuteComputeCycleLoggingTransientFailures` expõe o mecanismo e tem leitura ambígua; `TryExecuteComputeCycle` expressa a tentativa, enquanto o log fica no corpo. Para usar `Try...`, siga o contrato definido em `exception-handling-standards.md`, Contrato de Try.
+Nomes expressam o contrato, a condição ou o efeito: `IsCancellationDocument`, `RemoveReinsuranceIfExists`, `TryExecuteComputeCycle`. Use formas consagradas (`Is...`, `...IfExists`, `...Async`, `Try...`), sem empilhar orações ou expor o mecanismo. Prefira `TryExecuteComputeCycle` a `ExecuteComputeCycleLoggingTransientFailures`; o log fica no corpo. Para `Try...`, siga o contrato de `exception-handling-standards.md`.
 
 ## Comentários
 
-Comentário só para o que o nome não consegue carregar: uma regex complexa, uma restrição externa, um "por quê" não óbvio. Se o código precisa de comentário para ser entendido, renomeie ou extraia.
-
-```csharp
-// Antes: o comentário repete o código
-// verifica se o cliente está ativo
-if (customer.Status == Status.Active) ApplyDiscount(order);
-
-// Depois: o nome carrega a informação
-if (customer.IsActive) ApplyDiscount(order);
-
-// Aceitável: a regex não se explica sozinha
-// CPF com ou sem pontuação: 000.000.000-00 ou 00000000000
-private static readonly Regex CpfPattern = new(@"^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$");
-```
+Comente apenas o que o nome não consegue carregar: regex complexa, restrição externa ou motivo não óbvio. Se o comentário explica o que o código faz, renomeie ou extraia.
 
 ## Tamanho de classe e arquivo
 
-100 linhas são um ponto de revisão, não um limite obrigatório. Ao ultrapassar esse tamanho, revise as responsabilidades. Divida quando houver responsabilidades distintas. Se a classe ou o arquivo continuar coeso e a divisão prejudicar a leitura, mantenha-o e justifique brevemente. Arquivos de configuração (`appsettings.json`, `package.json`, `pyproject.toml`, `docker-compose.yml`) ficam fora desse critério.
-
-```csharp
-// Antes: OrderService.cs com 240 linhas e responsabilidades distintas
-public class OrderService
-{
-    public Task<Order> CreateAsync(CreateOrderCommand command) { ... }
-    public Task CancelAsync(Guid orderId) { ... }
-    public Task RefundAsync(Guid orderId) { ... }
-    public Task SendConfirmationEmailAsync(Order order) { ... }
-}
-
-// Depois: uma responsabilidade por arquivo
-// CreateOrderUseCase.cs
-// CancelOrderUseCase.cs
-// RefundOrderUseCase.cs
-// OrderConfirmationMailer.cs
-```
+100 linhas são ponto de revisão, não limite. Separe responsabilidades distintas; se o arquivo continuar coeso e a divisão prejudicar a leitura, mantenha-o e justifique brevemente. Arquivos de configuração ficam fora desse critério.
 
 ## Tamanho de método e função
 
-Em lógica imperativa, 20 linhas de lógica executável são o ponto de revisão e 30 o teto. Acima do teto, extraia etapas com nome de especificação (ver `narrative-style.md`).
+Em lógica imperativa, 20 linhas executáveis são ponto de revisão e 30 o teto. Acima do teto, extraia etapas com nome de especificação, conforme `narrative-style.md`. JSX, templates e estilos não contam; em componentes, avalie composição e responsabilidade.
 
-O limite conta lógica executável; marcação JSX, template e estilos não contam. Em componentes, avalie composição e responsabilidade.
+O orquestrador narra as etapas:
 
 ```csharp
-// Antes: 60 linhas num corpo só
-public async Task<Order> PlaceAsync(PlaceOrderCommand command)
-{
-    ... validação ...
-    ... cálculo de total, desconto e frete ...
-    ... persistência e publicação de evento ...
-}
-
-// Depois: o público narra, os privados executam
 public async Task<Order> PlaceAsync(PlaceOrderCommand command)
 {
     ValidateOrThrow(command);
@@ -138,150 +95,37 @@ public async Task<Order> PlaceAsync(PlaceOrderCommand command)
 
 ## Decisões explícitas e métodos de uma linha
 
-Use `if`, cláusulas de guarda e `else` quando necessário para expressar decisões, em vez de operadores condicionais ternários. Priorize a leitura explícita da condição e de seu resultado sobre a redução de linhas.
+Use `if`, guardas com retorno antecipado e `else` quando necessário; não use ternário. A guarda de não encontrado usa `if`, com `throw` ou retorno conforme o contrato do projeto.
 
-A guarda de não encontrado usa `if`, com `throw` ou retorno conforme o contrato do projeto.
-
-Em C#, mantenha corpo de expressão (`=>`) para métodos simples de uma linha.
-
-No JSX, troque o ternário por variável local, retorno antecipado ou bloco condicional do template.
+Em C#, mantenha `=>` em métodos simples de uma linha. No JSX, substitua ternários por variável local, retorno antecipado ou bloco condicional do template.
 
 ## Aninhamento de condicionais
 
-Até 3 níveis de `if/else`. Prefira cláusulas de guarda com retorno antecipado: cada condição que impede o fluxo sai cedo, e o caminho feliz fica sem indentação.
-
-```csharp
-// Antes
-public decimal CalculateDiscount(Customer customer, Order order)
-{
-    if (customer != null)
-    {
-        if (customer.IsActive)
-        {
-            if (order.Total > MinimumForDiscount)
-            {
-                return order.Total * LoyaltyDiscountRate;
-            }
-        }
-    }
-    return 0;
-}
-
-// Depois
-public decimal CalculateDiscount(Customer customer, Order order)
-{
-    if (customer is null) return 0;
-    if (!customer.IsActive) return 0;
-    if (order.Total <= MinimumForDiscount) return 0;
-
-    return order.Total * LoyaltyDiscountRate;
-}
-```
+Até 3 níveis de `if/else`. Prefira guardas que encerrem cedo os caminhos impeditivos e deixem o caminho feliz sem indentação.
 
 ## Parâmetros
 
-Até 4 por método ou função. Passou disso, agrupe num objeto parâmetro.
-
-```csharp
-// Antes
-Task<Policy> IssueAsync(Guid customerId, Guid productId, decimal coverage, DateOnly start, DateOnly end, string channel);
-
-// Depois
-Task<Policy> IssueAsync(IssuePolicyRequest request);
-
-public sealed record IssuePolicyRequest(
-    Guid CustomerId,
-    Guid ProductId,
-    decimal Coverage,
-    DateOnly Start,
-    DateOnly End,
-    string Channel);
-```
+Até 4 por método ou função; acima disso, agrupe num objeto parâmetro.
 
 ## Espaçamento dentro de métodos
 
 No máximo 1 linha em branco entre blocos.
 
-```csharp
-// Antes
-var total = CalculateTotal(order);
-
-
-
-var tax = CalculateTax(total);
-
-// Depois
-var total = CalculateTotal(order);
-
-var tax = CalculateTax(total);
-```
-
 ## Números e strings mágicos
 
-Número ou string com significado vira constante nomeada. O nome carrega o conceito.
-
-```csharp
-// Antes
-if (attempts > 3) throw new TooManyAttemptsException();
-if (order.Status == "PAID") Ship(order);
-
-// Depois
-private const int MaxLoginAttempts = 3;
-private const string PaidStatus = "PAID";
-
-if (attempts > MaxLoginAttempts) throw new TooManyAttemptsException();
-if (order.Status == PaidStatus) Ship(order);
-```
+Número ou string com significado vira constante nomeada pelo conceito. Isso inclui códigos de status, erro ou categoria comparados ou retornados na lógica: `order.Status == PaidStatus`, não `order.Status == "PAID"`.
 
 ## Declaração de variáveis
 
-Declare variáveis perto do primeiro uso; em código imperativo, na linha imediatamente antes.
-
-```csharp
-// Antes: tudo declarado no topo
-public async Task<Invoice> IssueAsync(Order order)
-{
-    var invoice = new Invoice();
-    var total = 0m;
-    var customer = await _customers.GetAsync(order.CustomerId);
-
-    ... 15 linhas usando customer ...
-
-    total = CalculateTotal(order);
-    invoice.Total = total;
-    return invoice;
-}
-
-// Depois: cada variável nasce onde é usada
-public async Task<Invoice> IssueAsync(Order order)
-{
-    var customer = await _customers.GetAsync(order.CustomerId);
-    ... 15 linhas usando customer ...
-
-    var total = CalculateTotal(order);
-    return new Invoice { Total = total };
-}
-```
+Declare perto do primeiro uso; em código imperativo, na linha imediatamente antes.
 
 ## Dados sensíveis
 
-Chave de API, senha, token e connection string vivem no arquivo que o projeto destina a isso (`.env`, user secrets, `appsettings.Development.json`, variável de ambiente) e entram no código por configuração.
-
-```csharp
-// Antes
-var client = new OpenAiClient("sk-live-4f8a9c2e...");
-
-// Depois
-var client = new OpenAiClient(configuration["OpenAi:ApiKey"]);
-```
+Chaves, senhas, tokens e connection strings entram por configuração, no mecanismo destinado pelo projeto: `.env`, user secrets, arquivo de configuração de desenvolvimento ou variável de ambiente.
 
 ## Mudanças cirúrgicas em código existente
 
-O princípio geral está em `ai-behavior-standards.md`, Respeitar o escopo. Em código:
-
-- Não refatore o que não está quebrado sem que isso faça parte do pedido.
-- Se notar código morto sem relação com a tarefa, mencione-o; não o apague.
-- Remova importações, variáveis e funções que suas mudanças tornaram desnecessárias.
+Siga o escopo de `ai-behavior-standards.md`: não refatore o que não está quebrado sem que isso faça parte do pedido. Mencione código morto preexistente sem removê-lo, salvo quando solicitado. Remova importações, variáveis e funções que suas mudanças deixaram sem uso.
 
 # Padrões de design
 
@@ -289,172 +133,61 @@ Valem para todo código novo.
 
 ## Uma responsabilidade por unidade
 
-Separe responsabilidades independentes na unidade natural da linguagem: classe, função, módulo ou componente. Uma unidade pode coordenar etapas do mesmo caso de uso ou compor partes da mesma interface; isso, sozinho, não exige dividi-la.
-
-```csharp
-// Antes: valida E calcula E persiste
-public class OrderProcessor { ... }
-
-// Depois: uma responsabilidade por classe
-public class OrderValidator { ... }
-public class OrderTotalCalculator { ... }
-public class OrderRepository { ... }
-```
+Separe responsabilidades independentes na unidade natural da linguagem: classe, função, módulo ou componente. Coordenar etapas do mesmo caso de uso ou compor partes da mesma interface não exige, por si só, dividir a unidade.
 
 ## Interface para colaborador, abstração só na terceira ocorrência
 
-Em C#, todo colaborador de serviço injetado entra por interface, mesmo com uma implementação só: o teste unitário isolado mocka (ver `test-standards.md`, Onde mockar). Objetos de dados e valores não são colaboradores de serviço.
+Em C#, todo colaborador de serviço injetado entra por interface, mesmo com uma implementação só, e é mockado no teste unitário isolado. Dados e valores não são colaboradores de serviço.
 
-Fora de C#, use o mecanismo de substituição que o projeto já adota: função por parâmetro, módulo, objeto ou interface quando fizer sentido. Esta regra não exige criar classes, interfaces ou contêineres de injeção.
+Fora de C#, use o mecanismo de substituição do projeto: função por parâmetro, módulo, objeto ou interface quando fizer sentido. A regra não exige criar classes, interfaces ou contêineres de injeção.
 
-Camada, configurabilidade e generalização só nascem na terceira ocorrência real; até lá, use a solução concreta.
-
-```csharp
-// Em C#: colaborador de serviço injetado entra por interface
-public class IssuePolicyUseCase(IPremiumCalculator calculator, IPolicyRepository repository)
-
-// Antes: generalização para um caso só (usado uma vez, CSV para disco)
-public class GenericExporter<TFormat, TDestination, TOptions> { ... }
-
-// Depois: o caso concreto
-public class CsvFileExporter { ... }
-```
+Camadas, configurabilidade e generalização só nascem na terceira ocorrência real; até lá, use a solução concreta.
 
 ## Funções puras, entrada e saída explícitas
 
-Em cálculos e regras de negócio, explicite entradas e resultados e mantenha dependências externas controláveis.
-
-```csharp
-// Antes: lê o relógio e um campo escondido
-public bool IsExpired() => EndDate < DateTime.Now && !_settings.GracePeriodEnabled;
-
-// Depois: tudo que influencia o resultado está na assinatura
-public bool IsExpiredAt(DateTime now, bool gracePeriodEnabled) => EndDate < now && !gracePeriodEnabled;
-```
+Em cálculos e regras de negócio, explicite entradas e resultados e mantenha dependências externas controláveis. Por exemplo, receba `now` como entrada em vez de ler `DateTime.Now` dentro do cálculo.
 
 ## Duplicação pequena é melhor que abstração errada
 
-Dois trechos parecidos podem ficar parecidos. Abstraia quando a terceira ocorrência mostrar o que é comum de verdade.
-
-```csharp
-// Antes: abstração forçada em cima de duas coisas só parecidas
-public abstract class DocumentBase { protected abstract decimal ComputeAmount(); }
-public class Invoice : DocumentBase { ... }
-public class CreditNote : DocumentBase { ... }
-
-// Depois: cada uma com o próprio cálculo, até aparecer o terceiro caso
-public class Invoice { public decimal Amount() { ... } }
-public class CreditNote { public decimal Amount() { ... } }
-```
+Dois trechos parecidos podem permanecer assim. Abstraia quando a terceira ocorrência mostrar o que é comum de verdade.
 
 ## Difícil de testar é sinal de design
 
-Se para provar uma regra o teste precisa montar colaboradores que não têm relação com ela, o problema é acoplamento. Conserte o design, não o teste.
-
-```csharp
-// Antes: 7 dependências, o teste monta 7 mocks para provar o cálculo do frete
-public class CheckoutService(ICart cart, IPayment payment, IShipping shipping, IStock stock, IMailer mailer, IAudit audit, IClock clock)
-
-// Depois: a regra ganha a própria classe, com o que ela realmente usa
-public class ShippingFeeCalculator(IShippingRateProvider rates)
-```
+Se provar uma regra exige montar colaboradores sem relação com ela, corrija o acoplamento no design em vez de complicar o teste.
 
 ## Convenções do projeto e estilo narrativo
 
-Para organizar o fluxo e decidir como aplicar o estilo a código novo ou existente, siga `narrative-style.md`, Código novo e código existente.
-
-As demais convenções seguem o repositório: nomes, pastas, framework de testes, injeção de dependências e tratamento de erros.
+Para organização do fluxo e aplicação a código novo ou existente, siga `narrative-style.md`. Nas demais convenções, siga o repositório: nomes, pastas, framework de testes, injeção de dependências e tratamento de erros.
 
 # Padrões de tratamento de exceções
 
-Em contextos que usam exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto (ver seção abaixo). Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo.
+Onde há exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto. Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo.
 
 ## Catch só onde age
 
-Um catch existe para recuperar, traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Fora desses casos, a exceção propaga. Catch vazio, ou que só loga e segue, esconde a falha de todo mundo. Não trate erros de cenários impossíveis.
-
-```csharp
-// Antes: loga e segue, como se nada tivesse acontecido
-try { await _repository.SaveAsync(policy); }
-catch (Exception ex) { _logger.LogError(ex, "Save failed"); }
-
-// Depois: sem ação possível aqui, propaga; quem loga é a fronteira
-await _repository.SaveAsync(policy);
-
-// Depois, quando há ação: retentar é agir
-try { await _gateway.AuthorizeAsync(payment); }
-catch (HttpRequestException) when (attempt < max) { await RetryAsync(); }
-```
+Capture para recuperar (inclusive retentar), traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Nos demais casos, deixe propagar. Não use catch vazio ou que apenas loga e segue; não trate cenários impossíveis.
 
 ## Catch pelo tipo que você trata
 
-Em C#, o tipo capturado é o que a ação cobre. `catch (Exception)` só na última linha de defesa (ver Handler centralizado na fronteira). Em linguagens cujo `catch` não filtra pelo tipo, verifique se a falha pertence ao contrato tratado e relance as demais pelo mecanismo da linguagem.
-
-```csharp
-// Antes: captura tudo para retentar, inclusive bug de código
-catch (Exception) { await RetryAsync(); }
-
-// Depois: retenta o que é transitório; o resto propaga
-catch (HttpRequestException) { await RetryAsync(); }
-catch (TimeoutException) { await RetryAsync(); }
-```
+Em C#, capture apenas os tipos cobertos pela ação; `catch (Exception)` fica na última linha de defesa da fronteira. Onde `catch` não filtra por tipo, verifique se a falha pertence ao contrato tratado e relance as demais.
 
 ## Contrato de Try
 
-Quando a convenção do projeto usa `Try...` para operações falíveis, esse nome indica uma tentativa cujo resultado é informado no retorno. A função ou método trata apenas as falhas previstas no contrato; exceções inesperadas continuam propagando, preservando tipo, mensagem e stack trace. Deixe explícitas quais falhas são tratadas.
+Quando o projeto usa `Try...`, informe o resultado da tentativa no retorno e explicite as falhas tratadas. Trate apenas essas falhas; exceções inesperadas propagam preservando tipo, mensagem e stack trace.
 
 ## Relançar preserva a original
 
-Em C#, use `throw;`, nunca `throw ex;`. Ao envolver com mais contexto, a original vai como inner exception.
-
-```csharp
-// Antes: reinicia o stack trace; a linha da falha some
-catch (SqlException ex) { throw ex; }
-
-// Depois: propaga intacta
-catch (SqlException) { throw; }
-
-// Depois, traduzindo para o domínio: a original vai dentro
-catch (SqlException ex) { throw new PolicyPersistenceException(policy.Id, ex); }
-```
+Em C#, use `throw;`, nunca `throw ex;`. Ao envolver uma exceção com mais contexto, mantenha a original como inner exception.
 
 ## Handler centralizado na fronteira
 
-Uma última linha de defesa na fronteira externa (middleware HTTP, wrapper do consumer, runner do job) converte exceção não tratada em um log (ver `logging-standards.md`, Falha registrada uma vez) e uma resposta padrão com o correlation ID. As camadas internas não inventam tratamento próprio.
-
-```csharp
-// Antes: cada controller com o próprio try/catch
-[HttpPost]
-public async Task<IActionResult> Issue(IssuePolicyRequest request)
-{
-    try { ... }
-    catch (Exception ex) { _logger.LogError(ex, "Issue failed"); return StatusCode(500); }
-}
-
-// Depois: o middleware trata tudo, uma vez
-app.UseExceptionHandler(builder => builder.Run(async context =>
-{
-    var ex = context.Features.Get<IExceptionHandlerFeature>()!.Error;
-    logger.LogError(ex, "Unhandled exception on {Path}", context.Request.Path);
-    await context.Response.WriteAsJsonAsync(new { correlationId = Activity.Current?.TraceId.ToString() });
-}));
-```
+A última linha de defesa externa (middleware HTTP, wrapper do consumer ou runner do job) converte exceções não tratadas em um único log e uma resposta padrão com correlation ID. As camadas internas não criam tratamento próprio. Siga `logging-standards.md`, Falha registrada uma vez.
 
 ## Resultado esperado segue o contrato do projeto
 
-Validação, não encontrado e conflito seguem o padrão que o repositório já usa: retorno tipado (`Result<T>`), código de status ou exceção específica. Não introduza outro padrão para o mesmo caso.
+Validação, não encontrado e conflito usam o padrão existente: retorno tipado, status ou exceção específica. Não introduza outro padrão para o mesmo caso. A guarda de não encontrado segue `code-standards.md`.
 
-Para a escrita da guarda de não encontrado, siga `code-standards.md`, Decisões explícitas e métodos de uma linha.
-
-Em projetos novos, prefira o mecanismo idiomático de retorno de resultados esperados da linguagem. Onde se usam exceções, reserve-as para falhas inesperadas.
-
-```csharp
-// Em projeto que já usa exceção específica para este caso: mantenha o contrato
-if (coverage > limit) throw new CoverageExceededException();
-
-// Em projeto que usa Result<T>, ou em projeto novo: prefira retorno tipado
-if (coverage > limit) return Result<Policy>.Failure("Coverage exceeds limit");
-```
+Em projetos novos, prefira o retorno de resultados esperados idiomático da linguagem; onde há exceções, reserve-as para falhas inesperadas.
 
 # Padrões de logging
 
@@ -462,87 +195,36 @@ Use o logger ou a telemetria já adotados no projeto.
 
 ## Logar em fronteira
 
-Uma linha de log responde a uma pergunta de quem investiga uma falha. Pontos que respondem: requisição ou evento recebido, decisão-chave, chamada externa (ida e volta), requisição concluída. Função interna e mudança trivial de estado não entram.
-
-```csharp
-// Antes: ruído
-_logger.LogInformation("Entrando em CalculateDiscount");
-_logger.LogInformation("Desconto calculado");
-_logger.LogInformation("Saindo de CalculateDiscount");
-
-// Depois: só o que reconstrói o caminho
-_logger.LogInformation("Order {OrderId} received from {Channel}", order.Id, channel);
-_logger.LogInformation("Order {OrderId} routed to manual review: total {Total} above limit", order.Id, order.Total);
-_logger.LogInformation("Order {OrderId} completed in {ElapsedMs}ms", order.Id, elapsed);
-```
+Registre o que ajuda a investigar: requisição ou evento recebido, decisão-chave, chamada externa (ida e volta) e conclusão da requisição. Funções internas e mudanças triviais de estado ficam fora do log.
 
 ## Log estruturado
 
-Use campos estruturados para permitir consultas na plataforma. Em C# com `ILogger`, use template com propriedades nomeadas em vez de string montada.
+Use campos estruturados. Em C# com `ILogger`, use templates com propriedades nomeadas, não strings montadas:
 
 ```csharp
-// Antes: vira texto, não dá para filtrar por OrderId
-_logger.LogInformation($"Order {order.Id} placed by {customer.Id}");
-
-// Depois: OrderId e CustomerId viram campos
 _logger.LogInformation("Order {OrderId} placed by {CustomerId}", order.Id, customer.Id);
 ```
 
 ## Correlation ID por escopo
 
-No backend, um ID de correlação acompanha o fluxo: HTTP, fila, job. Ele entra na fronteira e acompanha os logs pelo mecanismo do projeto (`Activity`/OpenTelemetry, middleware, header). Em C# com `ILogger`, sem outro mecanismo, use `BeginScope` na entrada. Ao publicar mensagem ou chamar outro serviço, propague o contexto conforme o protocolo adotado.
-
-```csharp
-// Antes: repetido em cada chamada
-_logger.LogInformation("Order {OrderId} received, correlation {CorrelationId}", order.Id, correlationId);
-_logger.LogInformation("Payment authorized, correlation {CorrelationId}", correlationId);
-
-// Depois: uma vez, na fronteira; as linhas abaixo carregam o campo sozinhas
-using (_logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = correlationId }))
-{
-    await _useCase.ExecuteAsync(command);
-}
-```
+No backend, introduza a correlação na fronteira de HTTP, fila ou job e use o mecanismo do projeto (`Activity`/OpenTelemetry, middleware, header). Em C# com `ILogger`, sem outro mecanismo, use `BeginScope` na entrada. Propague o contexto em mensagens e chamadas externas conforme o protocolo adotado.
 
 ## Níveis com critério
 
-Debug: diagnóstico, desligado em produção. Info: marco do ciclo de vida. Warn: anomalia da qual o sistema se recupera sozinho. Error: falha que precisa de humano.
-
-```csharp
-// Chamada externa falhou e vai retentar: Warn
-_logger.LogWarning(ex, "Payment gateway timed out for order {OrderId}, attempt {Attempt} of {Max}", order.Id, attempt, max);
-
-// Esgotou as tentativas: Error
-_logger.LogError(ex, "Payment gateway unreachable for order {OrderId} after {Max} attempts", order.Id, max);
-```
+- Debug: diagnóstico, desligado em produção.
+- Info: marco do ciclo de vida.
+- Warn: anomalia com recuperação automática, inclusive nova tentativa.
+- Error: falha que precisa de intervenção humana.
 
 ## Falha registrada uma vez
 
-Quando a exceção sobe até a fronteira (middleware HTTP, consumer ou runner do job), essa fronteira registra o erro uma vez. As camadas que apenas repassam a exceção não registram outro log.
+A fronteira registra a exceção não tratada uma vez; camadas que só a repassam não repetem o log. Uma camada que recupera a falha ou controla nova tentativa pode registrar aviso sobre essa ação.
 
-Quando uma camada recupera a falha ou controla uma nova tentativa, ela pode registrar um aviso sobre essa ação.
-
-O registro inclui a exceção completa e o contexto disponível: correlation ID, identificador da entidade e estado relevante.
-
-```csharp
-// Antes: só a mensagem entra; o stack trace some
-_logger.LogError("Failed to issue policy {PolicyId}: {Message}", policy.Id, ex.Message);
-
-// Depois: a exceção vai inteira, com stack trace
-_logger.LogError(ex, "Failed to issue policy {PolicyId} for customer {CustomerId}", policy.Id, customer.Id);
-```
+Inclua a exceção completa (com stack trace) e o contexto disponível: correlation ID, identificador da entidade e estado relevante.
 
 ## Identificador, não payload
 
-Logue o ID da entidade, não o objeto. Segredo, token, senha e dado pessoal ficam fora do log.
-
-```csharp
-// Antes: serializa o cliente inteiro, com CPF e e-mail
-_logger.LogInformation("Customer created: {@Customer}", customer);
-
-// Depois: o ID basta para achar o resto
-_logger.LogInformation("Customer {CustomerId} created", customer.Id);
-```
+Registre o ID da entidade, não o objeto. Segredos, tokens, senhas e dados pessoais ficam fora do log.
 
 # Estilo Narrativo — assinatura do Victor
 
@@ -581,298 +263,105 @@ Código novo segue este estilo, mesmo quando o código ao redor usa outra organi
 
 # Padrões de performance
 
-Correto e simples primeiro. As regras de queries, conexões e transações valem para o código que acessa esses recursos.
+Correto e simples primeiro. Regras de queries, conexões e transações aplicam-se ao código que acessa esses recursos.
 
 ## N+1: batch ou join
 
-Loop que faz uma query por iteração é o bug de performance mais comum, e o ORM esconde: no código parece um loop normal. Busque tudo de uma vez.
-
-```csharp
-// Antes: 1 query para os pedidos + 1 por pedido para o cliente
-var orders = await _db.Orders.ToListAsync(ct);
-foreach (var order in orders)
-    order.Customer = await _db.Customers.FindAsync(order.CustomerId);
-
-// Depois: uma query com join
-var orders = await _db.Orders.Include(o => o.Customer).ToListAsync(ct);
-
-// Depois, com Dapper: uma query com IN
-var customers = await connection.QueryAsync<Customer>(
-    "SELECT * FROM Customers WHERE Id IN @Ids", new { Ids = orders.Select(o => o.CustomerId) });
-```
+Busque os dados em lote ou com join, em vez de executar uma query por iteração de um loop, inclusive via ORM.
 
 ## Recurso descartável fecha sozinho
 
-Libere os recursos que a unidade de código cria e pelos quais é responsável, inclusive nos caminhos de falha. Recursos compartilhados ou gerenciados pelo framework seguem o ciclo de vida de seu proprietário.
+Libere recursos criados sob responsabilidade local, inclusive na falha. Recursos compartilhados ou gerenciados pelo framework seguem o ciclo de vida do proprietário.
 
-Em C#, conexões, streams, `HttpResponseMessage` e outros `IDisposable` sob responsabilidade local entram em `using`/`await using`. Para `HttpClient`, siga o padrão de `IHttpClientFactory`; evite criar e descartar um cliente com seu próprio pool a cada chamada.
+Em C#, use `using`/`await using` para conexões, streams, `HttpResponseMessage` e outros `IDisposable` locais. Para `HttpClient`, siga `IHttpClientFactory`; evite criar e descartar um cliente com pool próprio a cada chamada.
 
-No frontend, timers, listeners, subscriptions e requisições que deixaram de ser necessárias seguem a limpeza ou o cancelamento do framework.
-
-```csharp
-// Antes: conexão fica aberta se der exceção; HttpClient novo a cada chamada
-var connection = new SqlConnection(cs);
-connection.Open();
-var client = new HttpClient();
-
-// Depois
-await using var connection = new SqlConnection(cs);
-await connection.OpenAsync(ct);
-var client = _httpClientFactory.CreateClient("payments");
-```
+No frontend, limpe timers, listeners e subscriptions e cancele requisições desnecessárias pelo mecanismo do framework.
 
 ## Consulta limitada: paginação e projeção
 
-Toda listagem pagina e busca só as colunas que vai usar. "Get all" em tabela que cresce é bomba-relógio; entidade inteira com `Include` de tudo carrega o que ninguém lê.
-
-```csharp
-// Antes: tabela inteira, entidade inteira
-var policies = await _db.Policies.Include(p => p.Customer).Include(p => p.Coverages).ToListAsync(ct);
-
-// Depois: uma página, só os campos da tela
-var policies = await _db.Policies
-    .Where(p => p.CustomerId == customerId)
-    .OrderByDescending(p => p.IssuedAt)
-    .Skip(page * size).Take(size)
-    .Select(p => new PolicySummary(p.Id, p.Number, p.IssuedAt))
-    .ToListAsync(ct);
-```
+Toda listagem pagina e busca apenas as colunas usadas.
 
 ## Conexão e lock não atravessam chamada externa
 
-Mantenha transações curtas. Consultas e gravações que fazem parte da mesma operação podem compartilhar a transação. Evite manter conexão ou transação aberta enquanto aguarda HTTP, publicação em fila ou outro serviço externo. Essa espera prolonga o uso da conexão e pode manter locks, fazendo outras operações aguardarem.
-
-```csharp
-// Antes: a transação espera o gateway responder
-await using var tx = await _db.Database.BeginTransactionAsync(ct);
-var authorization = await _gateway.AuthorizeAsync(payment, ct);   // HTTP dentro da transação
-order.MarkPaid(authorization.Id);
-await _db.SaveChangesAsync(ct);
-await tx.CommitAsync(ct);
-
-// Depois: chamada externa antes, transação curta depois
-var authorization = await _gateway.AuthorizeAsync(payment, ct);
-await using var tx = await _db.Database.BeginTransactionAsync(ct);
-order.MarkPaid(authorization.Id);
-await _db.SaveChangesAsync(ct);
-await tx.CommitAsync(ct);
-```
+Mantenha transações curtas. Consultas e gravações da mesma operação podem compartilhar a transação. Evite manter conexão ou transação aberta enquanto aguarda HTTP, publicação em fila ou outro serviço externo: isso prolonga o uso da conexão e pode manter locks.
 
 ## Async ponta a ponta
 
-Em C#, use `await` do controller até o banco. Evite `.Result`, `.Wait()` e `.GetAwaiter().GetResult()`, que bloqueiam a thread e podem causar travamentos. `async void` só em event handler. Encaminhe o `CancellationToken` da requisição às operações que suportam cancelamento.
+Em C#, use `await` do controller até o banco. Evite `.Result`, `.Wait()` e `.GetAwaiter().GetResult()`. `async void` só em event handler. Encaminhe o `CancellationToken` da requisição às operações que suportam cancelamento.
 
-No frontend, impeça que resultados obsoletos atualizem a interface. Funções síncronas, cálculos puros e componentes não viram assíncronos por causa desta regra.
-
-```csharp
-// Antes: bloqueia a thread, o token morre no controller, async void engole a exceção
-public IActionResult Get(Guid id, CancellationToken ct)
-{
-    var policy = _repository.GetAsync(id).Result;
-    return Ok(policy);
-}
-public async void Refresh() { await _cache.RefreshAsync(); }
-
-// Depois
-public async Task<IActionResult> Get(Guid id, CancellationToken ct)
-{
-    var policy = await _repository.GetAsync(id, ct);
-    return Ok(policy);
-}
-public async Task RefreshAsync(CancellationToken ct) => await _cache.RefreshAsync(ct);
-```
+No frontend, impeça resultados obsoletos de atualizar a interface. Esta regra não torna assíncronos funções síncronas, cálculos puros ou componentes.
 
 ## Otimizar só com medição
 
-Otimização nasce de análise de desempenho, plano de execução da consulta ou teste de carga; sem número, é palpite que adiciona complexidade (ver Simplicidade primeiro em `ai-behavior-standards.md`). Vazamento de recursos, N+1 e consulta sem limite não são otimização: são bugs e se corrigem sem medir.
-
-```csharp
-// Antes: cache "por via das dúvidas", sem medição
-private static readonly ConcurrentDictionary<Guid, Policy> _cache = new();
-
-// Depois: o código simples; cache só quando o profiler apontar essa consulta
-var policy = await _repository.GetAsync(id, ct);
-```
+Otimize com análise de desempenho, plano de execução ou teste de carga; não introduza otimização especulativa. Vazamento de recursos, N+1 e consulta sem limite são bugs e devem ser corrigidos sem exigir medição.
 
 # Padrões de testes
 
-Exemplos em C# (xUnit + Moq) e TypeScript (Vitest).
-
 ## Cobertura obrigatória
 
-Regra crítica, sem exceção: todo código novo ou alterado nasce com teste automatizado, nos projetos que a configuração do repositório marca como cobertos. Cobertura mínima: 80%. Priorize o que é mais crítico para o negócio.
+Todo código novo ou alterado nasce com teste automatizado nos projetos que a configuração do repositório marca como cobertos. Cobertura mínima: 80%, sem exceção nesse escopo.
 
-```
-Checkout, pagamento, cálculo de prêmio   → cobertura exaustiva, inclusive bordas e erros
-Cadastro de categoria de produto         → caminho feliz e validações principais
-```
+Priorize o risco de negócio: checkout, pagamento e cálculo de prêmio exigem cobertura exaustiva, inclusive bordas e erros; cadastros simples cobrem caminho feliz e validações principais. Cobertura é piso: teste que passa com o comportamento quebrado não conta.
 
-Cobertura é o piso, não o objetivo: teste que passa com o comportamento quebrado não conta (ver Autovalidação).
-
-Objetivo verificável por tipo de tarefa: validação nova, testes para entradas inválidas passando; correção de bug, um teste que reproduz o problema e passa depois da correção; refatoração, os testes passam antes e depois.
+Verifique conforme a tarefa: validação nova exige testes de entradas inválidas passando; correção de bug exige teste que reproduz o problema e passa após a correção; refatoração exige testes passando antes e depois.
 
 ## Princípios FIRST, sem a exigência de escrever o teste primeiro
 
 ### Rapidez
 
-Testes unitários isolados rodam rapidamente. Dependência lenta (banco, HTTP, filesystem, fila) sai por stub ou mock no mecanismo da linguagem. Testes de integração existentes usam os recursos e fixtures necessários ao contrato que verificam (ver Pirâmide).
-
-```csharp
-// Antes: bate no banco real
-var repository = new SqlCustomerRepository(connectionString);
-
-// Depois: mock da interface
-var repository = new Mock<ICustomerRepository>();
-repository.Setup(r => r.GetAsync(activeCustomer.Id)).ReturnsAsync(activeCustomer);
-```
+Testes unitários isolados devem ser rápidos: substitua banco, HTTP, filesystem e fila por stub ou mock conforme a linguagem. Integrações existentes usam os recursos e fixtures necessários ao contrato testado.
 
 ### Independência
 
-Cada teste monta o próprio cenário e passa sozinho, em qualquer ordem.
-
-```csharp
-// Antes: o segundo teste só passa se o primeiro rodou antes
-private static Guid _orderId;
-
-[Fact] public void CreateOrder() { _orderId = _service.Create(order).Id; }
-[Fact] public void CancelOrder() { _service.Cancel(_orderId); }
-
-// Depois: cada teste cria o que precisa
-[Fact]
-public void Should_ChangeStatusToCancelled_When_OrderIsCancelled()
-{
-    var order = CreatePersistedOrder();
-
-    _service.Cancel(order.Id);
-
-    Assert.Equal(OrderStatus.Cancelled, order.Status);
-}
-```
+Cada teste monta seu cenário e passa sozinho, em qualquer ordem.
 
 ### Repetibilidade
 
-Mesmo resultado em toda execução. Data, aleatoriedade e API externa entram por mock ou fake.
-
-```csharp
-// Antes: o resultado muda conforme o dia em que o teste roda
-var isExpired = policy.EndDate < DateTime.Now;
-
-// Depois: relógio injetado e fixado no teste
-var clock = new Mock<IClock>();
-clock.Setup(c => c.Now).Returns(new DateTime(2026, 09, 10));
-var isExpired = policy.IsExpiredAt(clock.Object.Now);
-```
+Mantenha o resultado estável entre execuções: controle data, aleatoriedade e API externa com mock ou fake.
 
 ### Autovalidação
 
-O teste quebra quando o comportamento quebra. A assertion verifica retorno e efeito, não só "não lançou exceção". Depois de escrever, quebre o comportamento de propósito e confirme que o teste falha.
-
-```csharp
-// Antes: passa mesmo com cálculo errado
-var result = calculator.Calculate(order);
-Assert.NotNull(result);
-
-// Depois: valida o valor esperado
-var result = calculator.Calculate(order);
-Assert.Equal(150.00m, result.Total);
-Assert.Equal(15.00m, result.Discount);
-```
+Verifique retorno e efeito, não apenas ausência de exceção. Depois de escrever o teste, quebre o comportamento de propósito e confirme que ele falha.
 
 ## Onde mockar
 
-Esta exigência de mocks vale apenas para testes unitários isolados. Testes de integração seguem a seção Pirâmide: só são criados quando esse padrão já existe no repositório.
+Nos testes unitários isolados de C#, todos os colaboradores de serviço entram por interface e são mockados. Cada colaborador tem seu próprio teste. Entidades, DTOs, valores e dados de entrada podem ser concretos. Fora de C#, use o mecanismo de mock adotado pelo projeto.
 
-Nos testes unitários isolados de C#, os colaboradores de serviço da classe testada entram por interface e são mockados. Cada colaborador tem o próprio teste. Entidades, DTOs, objetos de valor e dados de entrada podem ser concretos.
+Exemplo: o teste de `IssuePolicyUseCase` recebe `IPremiumCalculator` mockado e verifica a persistência do prêmio retornado. A conta do prêmio é provada em `PremiumCalculatorTests`.
 
-Fora de C#, substitua os colaboradores pelo mecanismo de mock que o projeto já usa.
-
-```csharp
-// Antes: colaborador concreto dentro do teste do caso de uso
-var useCase = new IssuePolicyUseCase(new PremiumCalculator(), repository.Object);
-
-// Depois: só o caso de uso é concreto; o resto é mock
-var calculator = new Mock<IPremiumCalculator>();
-calculator.Setup(c => c.Calculate(It.IsAny<Policy>())).Returns(1250m);
-var repository = new Mock<IPolicyRepository>();
-var useCase = new IssuePolicyUseCase(calculator.Object, repository.Object);
-
-await useCase.IssueAsync(policy);
-
-repository.Verify(r => r.SaveAsync(It.Is<Policy>(p => p.Premium == 1250m)), Times.Once);
-```
-
-A conta do prêmio é provada em `PremiumCalculatorTests`, não aqui.
+A exigência de mocks é para unidade isolada; integração segue a seção Pirâmide.
 
 ## Estrutura AAA ou Dado/Quando/Então
 
-Três blocos, nessa ordem, separados por uma linha em branco.
-
-```csharp
-[Fact]
-public void Should_ApplyLoyaltyDiscount_When_CustomerIsActive()
-{
-    // Preparação
-    var customer = new Customer { IsActive = true };
-    var order = new Order(total: 200m);
-
-    // Execução
-    var discount = _calculator.CalculateDiscount(customer, order);
-
-    // Verificação
-    Assert.Equal(20m, discount);
-}
-```
+Organize preparação, execução e verificação nessa ordem, separadas por uma linha em branco.
 
 ## Um conceito por teste
 
 Cada teste cobre um requisito. Dois comportamentos, dois testes.
 
-```csharp
-// Antes: mistura desconto e frete
-[Fact]
-public void Should_CalculateOrder()
-{
-    Assert.Equal(20m, result.Discount);
-    Assert.Equal(15m, result.Shipping);
-}
-
-// Depois
-[Fact] public void Should_ApplyDiscount_When_CustomerIsActive() { ... }
-[Fact] public void Should_ChargeShipping_When_OrderIsBelowFreeShippingLimit() { ... }
-```
-
 ## Nome do teste
 
-O nome expressa o comportamento e a condição, usando a convenção do framework: `Should_RejectPolicy_When_CoverageExceedsLimit` em C# ou uma descrição equivalente em `it`/`test` no frontend. Evite nomes genéricos como `Test1` e `PolicyTest`.
+Expresse comportamento e condição na convenção do framework: `Should_RejectPolicy_When_CoverageExceedsLimit` em C# ou descrição equivalente em `it`/`test` no frontend. Evite nomes genéricos.
 
 ## Ordem de criação
 
-1. Comportamento mais crítico (o que quebra o negócio se falhar).
+1. Comportamento mais crítico para o negócio.
 2. Caminho feliz dos demais requisitos.
-3. Bordas e erros: entrada inválida, vazio, limite, falha de dependência.
+3. Bordas e erros: entrada inválida, vazio, limite e falha de dependência.
 
 ## Pirâmide
 
-Base larga de testes de unidade; integração e end-to-end no topo, em menor número. Teste de integração só onde o repositório já tem esse padrão (pasta, projeto ou fixture de integração existente). Sem padrão existente, fique na unidade.
-
-```
-Repositório tem tests/Integration/ com fixture de banco  → teste novo de integração segue esse padrão
-Repositório só tem testes de unidade                     → código novo ganha teste de unidade
-```
+Priorize testes de unidade; integração e end-to-end ficam em menor número. Crie integração apenas onde o repositório já adota esse padrão (pasta, projeto ou fixture) e siga-o. Sem padrão existente, fique na unidade.
 
 ## Frontend
 
-Teste o comportamento visível ao usuário com as ferramentas já adotadas no repositório. A regra de mocks não obriga a substituir componentes filhos, hooks ou recursos do framework. Testes de integração e end-to-end seguem a seção Pirâmide.
+Teste o comportamento visível ao usuário com as ferramentas do repositório. A regra de mocks não exige substituir componentes filhos, hooks ou recursos do framework. Integração e end-to-end seguem a seção Pirâmide.
 
 ```typescript
-// Antes: testa estado interno
-expect(component.state.isOpen).toBe(true);
-
-// Depois: testa o que o usuário vê
 await user.click(screen.getByRole('button', { name: 'Finalizar compra' }));
 expect(screen.getByText('Pedido confirmado')).toBeVisible();
 ```
 
 ## Testes com falhas intermitentes
 
-Investigue e corrija testes com falhas intermitentes. Remova um teste apenas quando ele não proteger mais um comportamento necessário ou quando essa proteção já estiver coberta por outro teste confiável.
+Investigue e corrija falhas intermitentes. Remova um teste apenas se o comportamento deixou de ser necessário ou já está protegido por outro teste confiável.

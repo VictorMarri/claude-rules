@@ -5,91 +5,30 @@ paths:
 
 # Padrões de tratamento de exceções
 
-Em contextos que usam exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto (ver seção abaixo). Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo.
+Onde há exceções, falhas inesperadas propagam como exceções; resultados esperados seguem o contrato do projeto. Em linguagens com erros retornados ou resultados tipados, preserve esse mecanismo.
 
 ## Catch só onde age
 
-Um catch existe para recuperar, traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Fora desses casos, a exceção propaga. Catch vazio, ou que só loga e segue, esconde a falha de todo mundo. Não trate erros de cenários impossíveis.
-
-```csharp
-// Antes: loga e segue, como se nada tivesse acontecido
-try { await _repository.SaveAsync(policy); }
-catch (Exception ex) { _logger.LogError(ex, "Save failed"); }
-
-// Depois: sem ação possível aqui, propaga; quem loga é a fronteira
-await _repository.SaveAsync(policy);
-
-// Depois, quando há ação: retentar é agir
-try { await _gateway.AuthorizeAsync(payment); }
-catch (HttpRequestException) when (attempt < max) { await RetryAsync(); }
-```
+Capture para recuperar (inclusive retentar), traduzir para o domínio, adicionar contexto ou converter em resposta na fronteira. Nos demais casos, deixe propagar. Não use catch vazio ou que apenas loga e segue; não trate cenários impossíveis.
 
 ## Catch pelo tipo que você trata
 
-Em C#, o tipo capturado é o que a ação cobre. `catch (Exception)` só na última linha de defesa (ver Handler centralizado na fronteira). Em linguagens cujo `catch` não filtra pelo tipo, verifique se a falha pertence ao contrato tratado e relance as demais pelo mecanismo da linguagem.
-
-```csharp
-// Antes: captura tudo para retentar, inclusive bug de código
-catch (Exception) { await RetryAsync(); }
-
-// Depois: retenta o que é transitório; o resto propaga
-catch (HttpRequestException) { await RetryAsync(); }
-catch (TimeoutException) { await RetryAsync(); }
-```
+Em C#, capture apenas os tipos cobertos pela ação; `catch (Exception)` fica na última linha de defesa da fronteira. Onde `catch` não filtra por tipo, verifique se a falha pertence ao contrato tratado e relance as demais.
 
 ## Contrato de Try
 
-Quando a convenção do projeto usa `Try...` para operações falíveis, esse nome indica uma tentativa cujo resultado é informado no retorno. A função ou método trata apenas as falhas previstas no contrato; exceções inesperadas continuam propagando, preservando tipo, mensagem e stack trace. Deixe explícitas quais falhas são tratadas.
+Quando o projeto usa `Try...`, informe o resultado da tentativa no retorno e explicite as falhas tratadas. Trate apenas essas falhas; exceções inesperadas propagam preservando tipo, mensagem e stack trace.
 
 ## Relançar preserva a original
 
-Em C#, use `throw;`, nunca `throw ex;`. Ao envolver com mais contexto, a original vai como inner exception.
-
-```csharp
-// Antes: reinicia o stack trace; a linha da falha some
-catch (SqlException ex) { throw ex; }
-
-// Depois: propaga intacta
-catch (SqlException) { throw; }
-
-// Depois, traduzindo para o domínio: a original vai dentro
-catch (SqlException ex) { throw new PolicyPersistenceException(policy.Id, ex); }
-```
+Em C#, use `throw;`, nunca `throw ex;`. Ao envolver uma exceção com mais contexto, mantenha a original como inner exception.
 
 ## Handler centralizado na fronteira
 
-Uma última linha de defesa na fronteira externa (middleware HTTP, wrapper do consumer, runner do job) converte exceção não tratada em um log (ver `logging-standards.md`, Falha registrada uma vez) e uma resposta padrão com o correlation ID. As camadas internas não inventam tratamento próprio.
-
-```csharp
-// Antes: cada controller com o próprio try/catch
-[HttpPost]
-public async Task<IActionResult> Issue(IssuePolicyRequest request)
-{
-    try { ... }
-    catch (Exception ex) { _logger.LogError(ex, "Issue failed"); return StatusCode(500); }
-}
-
-// Depois: o middleware trata tudo, uma vez
-app.UseExceptionHandler(builder => builder.Run(async context =>
-{
-    var ex = context.Features.Get<IExceptionHandlerFeature>()!.Error;
-    logger.LogError(ex, "Unhandled exception on {Path}", context.Request.Path);
-    await context.Response.WriteAsJsonAsync(new { correlationId = Activity.Current?.TraceId.ToString() });
-}));
-```
+A última linha de defesa externa (middleware HTTP, wrapper do consumer ou runner do job) converte exceções não tratadas em um único log e uma resposta padrão com correlation ID. As camadas internas não criam tratamento próprio. Siga `logging-standards.md`, Falha registrada uma vez.
 
 ## Resultado esperado segue o contrato do projeto
 
-Validação, não encontrado e conflito seguem o padrão que o repositório já usa: retorno tipado (`Result<T>`), código de status ou exceção específica. Não introduza outro padrão para o mesmo caso.
+Validação, não encontrado e conflito usam o padrão existente: retorno tipado, status ou exceção específica. Não introduza outro padrão para o mesmo caso. A guarda de não encontrado segue `code-standards.md`.
 
-Para a escrita da guarda de não encontrado, siga `code-standards.md`, Decisões explícitas e métodos de uma linha.
-
-Em projetos novos, prefira o mecanismo idiomático de retorno de resultados esperados da linguagem. Onde se usam exceções, reserve-as para falhas inesperadas.
-
-```csharp
-// Em projeto que já usa exceção específica para este caso: mantenha o contrato
-if (coverage > limit) throw new CoverageExceededException();
-
-// Em projeto que usa Result<T>, ou em projeto novo: prefira retorno tipado
-if (coverage > limit) return Result<Policy>.Failure("Coverage exceeds limit");
-```
+Em projetos novos, prefira o retorno de resultados esperados idiomático da linguagem; onde há exceções, reserve-as para falhas inesperadas.

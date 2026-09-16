@@ -1,14 +1,12 @@
-# Configuração do Claude Code
+# Configuração do Claude Code e do Codex
 
-Este repositório guarda a minha configuração pessoal do Claude Code: as orientações globais e as rules que definem como o agente trabalha, escreve código e toma decisões.
-
-Ele funciona como uma cópia versionada da configuração ativa em `%USERPROFILE%\.claude`. Assim, as mudanças têm histórico no GitHub e podem ser recuperadas em outra máquina.
+Este repositório é a cópia versionada da minha configuração pessoal de agentes: as orientações globais e as rules que definem como o agente trabalha, escreve código e toma decisões. A cópia ativa fica em `%USERPROFILE%\.claude` (Claude Code) e `%USERPROFILE%\.codex\AGENTS.md` (Codex).
 
 ## Estrutura
 
 ```text
 .
-├── AGENTS.md                 # Versão consolidada para o Codex, gerada a partir de CLAUDE.md e rules/
+├── AGENTS.md                 # Gerado: CLAUDE.md + rules/ em um só arquivo, para o Codex
 ├── CLAUDE.md                 # Carrega sempre: linguagem e framework, resumo da assinatura, índice das rules
 ├── gera-agents.js            # Gera AGENTS.md a partir de CLAUDE.md e rules/
 └── rules/
@@ -22,11 +20,20 @@ Ele funciona como uma cópia versionada da configuração ativa em `%USERPROFILE
     └── test-standards.md                # Carrega ao ler código
 ```
 
-## Como o carregamento funciona
+| Arquivo | Finalidade |
+| --- | --- |
+| `ai-behavior-standards.md` | Pensar antes de executar, simplicidade, respeitar o escopo e execução guiada por objetivo. |
+| `code-standards.md` | Nomes, comentários, tamanhos, decisões explícitas, convenções de código e mudanças cirúrgicas em código existente. |
+| `design-standards.md` | Responsabilidades, interface por colaborador, abstração na terceira ocorrência, pureza e convenções do projeto. |
+| `exception-handling-standards.md` | Catch só onde age, tipo tratado, contrato de Try, relançamento, handler na fronteira e resultado esperado. |
+| `logging-standards.md` | Log em fronteira, log estruturado, correlation ID, níveis, falha registrada uma vez e identificador em vez de payload. |
+| `narrative-style.md` | A assinatura de organização do código: orquestrador, etapas e leitura do fluxo. |
+| `performance-standards.md` | N+1, recursos descartáveis, paginação, transações curtas, async ponta a ponta e medir antes de otimizar. |
+| `test-standards.md` | Cobertura, objetivo verificável, FIRST, onde mockar, AAA, nomes, pirâmide e frontend. |
 
-`CLAUDE.md` tem três partes: como aplicar os exemplos em C# a outras linguagens e frameworks; um resumo da minha assinatura de código em oito itens; e o índice das rules. Ele entra em toda sessão.
+## Como o Claude Code carrega
 
-`rules/ai-behavior-standards.md` também entra em toda sessão. Ela guarda só orientações gerais: perguntar quando a dúvida muda o resultado, informar suposições, avançar em decisões pequenas e reversíveis, simplicidade, respeitar o escopo e concluir com a verificação adequada à tarefa.
+`CLAUDE.md` e `rules/ai-behavior-standards.md` entram em toda sessão. O primeiro traz o resumo da assinatura em oito itens e o índice das rules; a segunda, só orientações gerais de comportamento.
 
 As outras sete rules têm o cabeçalho `paths:` e só entram quando o Claude Code lê um arquivo `.cs`, `.ts`, `.tsx`, `.js`, `.jsx` ou `.py`:
 
@@ -41,33 +48,36 @@ Assim, uma conversa sem código não gasta contexto com regras de código. Ao pl
 
 Para conferir o que carregou numa sessão, rode `/context` e veja a lista em Memory files. O hook `InstructionsLoaded` registra cada arquivo carregado e o motivo: `session_start` ou `path_glob_match`.
 
-| Arquivo | Finalidade |
-| --- | --- |
-| `ai-behavior-standards.md` | Pensar antes de executar, simplicidade, respeitar o escopo e execução guiada por objetivo. |
-| `code-standards.md` | Nomes, comentários, tamanhos, decisões explícitas, convenções de código e mudanças cirúrgicas em código existente. |
-| `design-standards.md` | Responsabilidades, interface por colaborador, abstração na terceira ocorrência, pureza e convenções do projeto. |
-| `exception-handling-standards.md` | Catch só onde age, tipo tratado, contrato de Try, relançamento, handler na fronteira e resultado esperado. |
-| `logging-standards.md` | Log em fronteira, log estruturado, correlation ID, níveis, falha registrada uma vez e identificador em vez de payload. |
-| `narrative-style.md` | A assinatura de organização do código: orquestrador, etapas e leitura do fluxo. |
-| `performance-standards.md` | N+1, recursos descartáveis, paginação, transações curtas, async ponta a ponta e medir antes de otimizar. |
-| `test-standards.md` | Cobertura, objetivo verificável, FIRST, onde mockar, AAA, nomes, pirâmide e frontend. |
+## Como o Codex carrega
 
-## Codex
+O Codex lê um único `AGENTS.md`, de uma vez, no início da sessão. O limite padrão para a cadeia de instruções é 32 KiB. Por isso `AGENTS.md` é gerado a partir de `CLAUDE.md` e `rules/`: sem o cabeçalho `paths:` e com o parágrafo de carregamento adaptado. Hoje ele tem cerca de 22 KB.
 
-`AGENTS.md` é a mesma configuração em um único arquivo, porque o Codex recebe suas instruções nesse formato. Ele é gerado a partir de `CLAUDE.md` e de `rules/`: sem o cabeçalho `paths:`, sem o comentário de manutenção e com o parágrafo de carregamento adaptado, já que o Codex lê tudo de uma vez.
-
-Para regenerar, rode na raiz do repositório (precisa do Node.js):
+Nunca edite `AGENTS.md` à mão. Altere `CLAUDE.md` ou `rules/` e regenere (precisa do Node.js):
 
 ```powershell
 node .\gera-agents.js
 ```
 
-O script lê `CLAUDE.md` e `rules/` e sobrescreve `AGENTS.md`. Confira com `git diff AGENTS.md` antes de publicar.
+## Instalar nesta máquina
 
-O arquivo global do Codex nesta máquina é `%USERPROFILE%\.codex\AGENTS.md`. Depois de regenerar, copie:
+Depois de editar ou de clonar o repositório, copie para os diretórios ativos. O backup permite voltar se uma sessão se comportar mal:
 
 ```powershell
+Copy-Item -LiteralPath "$env:USERPROFILE\.claude\rules" -Destination "$env:USERPROFILE\.claude\rules.bak" -Recurse -Force
+Copy-Item -LiteralPath .\CLAUDE.md -Destination "$env:USERPROFILE\.claude\CLAUDE.md" -Force
+Copy-Item -LiteralPath .\rules\* -Destination "$env:USERPROFILE\.claude\rules" -Recurse -Force
 Copy-Item -LiteralPath .\AGENTS.md -Destination "$env:USERPROFILE\.codex\AGENTS.md" -Force
+```
+
+Em outra máquina, crie `%USERPROFILE%\.claude\rules` antes de copiar. As regras valem a partir da próxima sessão de cada ferramenta.
+
+## Publicar
+
+```powershell
+git diff
+git add CLAUDE.md rules AGENTS.md gera-agents.js README.md
+git commit -m "docs: atualiza regras do Claude"
+git push
 ```
 
 ## Princípios da configuração
@@ -76,53 +86,18 @@ Copy-Item -LiteralPath .\AGENTS.md -Destination "$env:USERPROFILE\.codex\AGENTS.
 - Exemplos em C# não exigem classes, interfaces ou APIs de .NET em frontend ou outras linguagens.
 - O idioma das rules não define o idioma dos identificadores. Nomes de código seguem o vocabulário do projeto ou módulo.
 - Código novo usa o estilo narrativo quando há um fluxo a coordenar. Métodos, funções e componentes existentes preservam sua estrutura, salvo pedido de refatoração.
+- Regra curta, sem exemplo por padrão. Um exemplo entra quando o teste A/B mostra que a regra perde força sem ele.
 - Instrução de agente é remendo para um modelo específico. A cada troca de modelo, as rules passam por auditoria: o que compensava fraqueza de modelo sai; o que é preferência minha fica.
 
-## Revisão de setembro de 2026
+## Revisões de setembro de 2026
 
-A revisão partiu do artigo da OpenAI "Rethinking skills and prompts for GPT-6 Astra" e foi feita em duas rodadas. Cada rodada foi revisada por um segundo agente e testada em ambiente isolado antes de ativar.
+A revisão partiu do artigo da OpenAI "Rethinking skills and prompts for GPT-6 Astra". Cada rodada foi revisada por um segundo agente e testada em ambiente isolado antes de ativar.
 
 1. `paths:` nas sete rules técnicas, resumo da assinatura no `CLAUDE.md`, avisos repetidos de "adapte C# ao framework" reduzidos a uma frase e duplicações resolvidas. No teste A/B, o contexto inicial caiu de 42 mil para 26 mil tokens, com a mesma qualidade de código.
 2. `ai-behavior-standards.md` só com orientações gerais. O que era exclusivo de código foi para as rules técnicas.
+3. Seis rules técnicas enxutas: saíram os exemplos que só repetiam a regra; obrigações, condições e exceções ficaram. `AGENTS.md` caiu de 39,5 KB para 22 KB e passou a caber nos 32 KiB do Codex. No teste A/B (Claude e Codex, mesmo prompt, testes independentes e mutação), funcionalidade e decisões ficaram iguais; a única regressão, strings de status e erro deixadas inline, foi corrigida com um exemplo de uma linha na regra de constantes.
 
-Os exemplos antes e depois em C# continuam nas rules técnicas. Nenhuma regra foi removida com a justificativa de que "o modelo já sabe".
-
-## Aplicar uma alteração localmente
-
-Edite os arquivos neste repositório. Depois, no PowerShell, faça um backup e copie a configuração para o diretório usado pelo Claude Code:
-
-```powershell
-Copy-Item -LiteralPath "$env:USERPROFILE\.claude\CLAUDE.md" -Destination "$env:USERPROFILE\.claude\CLAUDE.md.bak" -Force
-Copy-Item -LiteralPath "$env:USERPROFILE\.claude\rules" -Destination "$env:USERPROFILE\.claude\rules.bak" -Recurse -Force
-Copy-Item -LiteralPath .\CLAUDE.md -Destination "$env:USERPROFILE\.claude\CLAUDE.md" -Force
-Copy-Item -LiteralPath .\rules\* -Destination "$env:USERPROFILE\.claude\rules" -Recurse -Force
-```
-
-Inicie uma nova sessão do Claude Code para carregar as regras atualizadas.
-
-## Publicar uma alteração
-
-Depois de revisar a mudança, registre-a no histórico:
-
-```powershell
-git status
-git diff
-git add CLAUDE.md rules AGENTS.md gera-agents.js README.md
-git commit -m "docs: atualiza regras do Claude"
-git push
-```
-
-## Recuperar em outra máquina
-
-Clone o repositório e copie os arquivos para `%USERPROFILE%\.claude`:
-
-```powershell
-git clone https://github.com/VictorMarri/claude-rules.git
-Set-Location claude-rules
-New-Item -ItemType Directory -Path "$env:USERPROFILE\.claude\rules" -Force | Out-Null
-Copy-Item -LiteralPath .\CLAUDE.md -Destination "$env:USERPROFILE\.claude\CLAUDE.md" -Force
-Copy-Item -LiteralPath .\rules\* -Destination "$env:USERPROFILE\.claude\rules" -Recurse -Force
-```
+Nenhuma regra foi removida com a justificativa de que "o modelo já sabe".
 
 ## Segurança
 
